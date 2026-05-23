@@ -159,6 +159,49 @@
   </div>
 </div>
 
+<!-- RUN-TOP MODAL -->
+<div id="runtop-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop p-4">
+  <div class="w-full max-w-[600px] bg-ink-900 border border-ink-800 rounded-2xl shadow-2xl animate-slideIn">
+    <div class="px-6 pt-6 pb-2 flex items-start justify-between">
+      <div>
+        <div class="text-[11px] uppercase tracking-widest text-pizza-crust font-semibold">Автопилот</div>
+        <h3 class="text-xl font-bold mt-1">Вывести всех в топ</h3>
+      </div>
+      <button id="runtop-close" class="text-ink-500 hover:text-ink-200 transition-colors p-1 -mr-1 -mt-1">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5l-10 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="px-6 py-4">
+      <div class="flex items-center gap-4 mb-4">
+        <div>
+          <label class="text-xs uppercase tracking-wider text-ink-400 font-semibold">Начать с позиции</label>
+          <div class="flex items-center gap-2 mt-2">
+            <span class="text-ink-500 font-mono text-sm">#</span>
+            <input id="runtop-start" type="number" min="1" max="100" value="1"
+              class="input w-24 px-3 py-2 font-mono text-sm tnum" />
+          </div>
+        </div>
+        <p class="text-xs text-ink-500 mt-5">Каждый кошелёк получит score чуть выше текущей позиции в лидерборде. Перед запуском тянется свежий лидерборд.</p>
+      </div>
+      <div id="runtop-plan" class="bg-ink-950/60 border border-ink-800 rounded-xl overflow-hidden">
+        <div class="grid grid-cols-[40px_1fr_130px_130px] px-4 py-2.5 text-[11px] uppercase tracking-wider text-ink-500 font-semibold border-b border-ink-800">
+          <div>#</div><div>Кошелёк</div><div class="text-right">Сейчас</div><div class="text-right">Цель</div>
+        </div>
+        <div id="runtop-rows" class="max-h-[280px] overflow-y-auto"></div>
+      </div>
+    </div>
+    <div class="px-6 py-4 border-t border-ink-800 flex items-center justify-end gap-2">
+      <button id="runtop-cancel" class="btn-ghost px-4 py-2.5 rounded-lg text-sm font-medium">Отмена</button>
+      <button id="runtop-launch" class="btn-primary px-5 py-2.5 rounded-lg text-sm flex items-center gap-2">
+        <span id="runtop-launch-text">🚀 Запустить всех</span>
+        <svg id="runtop-spinner" class="hidden animate-spin" width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.5" stroke-dasharray="28" stroke-dashoffset="10" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- BULK IMPORT MODAL -->
 <div id="bulk-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop p-4">
   <div class="w-full max-w-[520px] bg-ink-900 border border-ink-800 rounded-2xl shadow-2xl animate-slideIn">
@@ -492,10 +535,16 @@ function renderWallets() {
         <h1 class="text-3xl font-bold mt-1 tracking-tight">Кошельки</h1>
         <p class="text-ink-400 text-sm mt-1">${state.wallets.length} подключено · лидерборд: <span class="text-ink-200 font-mono">${state.leaderboard.length} записей</span>${state.lastUpdate ? ` · <span class="font-mono">${timeAgo(state.lastUpdate)}</span>` : ' · <span class="text-yellow-500">не загружен</span>'}</p>
       </div>
-      <button id="refresh-wallets-btn" class="btn-ghost px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2">
-        <svg id="refresh-wallets-icon" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M12 2v3.5H8.5M2 12V8.5h3.5M11.3 5.5A4.5 4.5 0 0 0 3 6.6M2.7 8.5A4.5 4.5 0 0 0 11 7.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Обновить
-      </button>
+      <div class="flex items-center gap-2">
+        <button id="refresh-wallets-btn" class="btn-ghost px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2">
+          <svg id="refresh-wallets-icon" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M12 2v3.5H8.5M2 12V8.5h3.5M11.3 5.5A4.5 4.5 0 0 0 3 6.6M2.7 8.5A4.5 4.5 0 0 0 11 7.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Обновить
+        </button>
+        <button id="run-top-btn" class="btn-primary px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.5L7 12.5M7 1.5L3 5.5M7 1.5L11 5.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          В топ
+        </button>
+      </div>
     </div>
 
     ${state.wallets.length === 0 ? `
@@ -648,6 +697,10 @@ function bindMainEvents() {
       document.getElementById('m-spinner').classList.add('hidden');
     }
   });
+
+  // run-top button
+  const runTopBtn = document.getElementById('run-top-btn');
+  if (runTopBtn) runTopBtn.addEventListener('click', openRunTopModal);
 
   // bulk import button
   const bulkBtn = document.getElementById('bulk-import-btn');
@@ -848,6 +901,75 @@ document.getElementById('bulk-modal-import').addEventListener('click', async () 
     btn.disabled = false;
     document.getElementById('bulk-import-text').textContent = 'Импортировать';
     document.getElementById('bulk-spinner').classList.add('hidden');
+  }
+});
+
+// ─── run-top modal ─────────────────────────────────────────────────────────
+const SCORE_BONUSES = [300, 500, 500, 500, 400, 300, 200];
+const runtopModal = document.getElementById('runtop-modal');
+
+function openRunTopModal() {
+  rebuildRunTopPlan();
+  runtopModal.classList.remove('hidden');
+  runtopModal.classList.add('flex');
+}
+function closeRunTopModal() {
+  runtopModal.classList.add('hidden');
+  runtopModal.classList.remove('flex');
+}
+
+function rebuildRunTopPlan() {
+  const startRank = Math.max(1, parseInt(document.getElementById('runtop-start').value) || 1);
+  const rows = document.getElementById('runtop-rows');
+  if (!state.wallets.length) {
+    rows.innerHTML = `<div class="px-4 py-4 text-sm text-ink-500">Нет кошельков</div>`;
+    return;
+  }
+  rows.innerHTML = state.wallets.map((w, i) => {
+    const pos = startRank - 1 + i;
+    const lbEntry = state.leaderboard[pos];
+    const current = lbEntry ? (lbEntry.best_score ?? 0) : 0;
+    const bonus   = SCORE_BONUSES[i] ?? 200;
+    const target  = current + bonus;
+    return `
+    <div class="grid grid-cols-[40px_1fr_130px_130px] items-center px-4 py-2.5 border-b border-ink-800/50 last:border-0 text-sm">
+      <div class="text-ink-400 font-mono">#${pos + 1}</div>
+      <div class="font-mono text-xs text-ink-300">${short(w.wallet)}</div>
+      <div class="text-right font-mono tnum text-ink-400">${current.toLocaleString('ru-RU')}</div>
+      <div class="text-right font-mono tnum font-semibold text-pizza-crust">→ ${target.toLocaleString('ru-RU')}</div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('runtop-start').addEventListener('input', rebuildRunTopPlan);
+document.getElementById('runtop-close').addEventListener('click', closeRunTopModal);
+document.getElementById('runtop-cancel').addEventListener('click', closeRunTopModal);
+runtopModal.addEventListener('click', e => { if (e.target === runtopModal) closeRunTopModal(); });
+
+document.getElementById('runtop-launch').addEventListener('click', async () => {
+  const startRank = Math.max(1, parseInt(document.getElementById('runtop-start').value) || 1);
+  const btn  = document.getElementById('runtop-launch');
+  const text = document.getElementById('runtop-launch-text');
+  const spin = document.getElementById('runtop-spinner');
+  btn.disabled = true;
+  text.textContent = 'Запускаем…';
+  spin.classList.remove('hidden');
+  try {
+    const res = await apiFetch('/api/run-top', {
+      method: 'POST',
+      body: JSON.stringify({
+        wallets: state.wallets.map(w => w.wallet),
+        start_rank: startRank - 1,
+      }),
+    });
+    closeRunTopModal();
+    showToast('ok', `🚀 Запущено ${res.queued} сессий в топ-${startRank}+`);
+  } catch (e) {
+    showToast('error', '❌ ' + e.message);
+  } finally {
+    btn.disabled = false;
+    text.textContent = '🚀 Запустить всех';
+    spin.classList.add('hidden');
   }
 });
 

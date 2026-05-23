@@ -11,7 +11,7 @@ import httpx
 
 from bot import (
     get_token, encrypt_payload, get_leaderboard_top,
-    BASE_HEADERS, API_KEY, PROXY, HARDCODED_KEY,
+    BASE_HEADERS, API_KEY, PROXY, HARDCODED_KEY, SCORE_BONUSES,
 )
 
 # ---------------------------------------------------------------------------
@@ -20,7 +20,7 @@ app = FastAPI()
 
 # кеш токенов: { wallet_addr: (token, expires_at) }
 _token_cache: dict = {}
-TOKEN_TTL = 23 * 3600  # 23 часа (токен живёт 24ч, берём с запасом)
+TOKEN_TTL = 23 * 3600
 
 async def get_cached_token(wallet: str) -> str:
     import time
@@ -53,7 +53,7 @@ async def ws_handler(ws: WebSocket):
     clients.append(ws)
     try:
         while True:
-            await ws.receive_text()   # держим соединение живым
+            await ws.receive_text()
     except WebSocketDisconnect:
         if ws in clients:
             clients.remove(ws)
@@ -99,7 +99,6 @@ async def api_import_wallets(body: ImportBody):
     existing = load_wallets()
     existing_set = {w["wallet"].lower() for w in existing}
     added, skipped, invalid = 0, 0, 0
-
     for raw in body.wallets:
         addr = raw.strip()
         if not (addr.startswith("0x") and len(addr) == 42):
@@ -111,7 +110,6 @@ async def api_import_wallets(body: ImportBody):
         existing.append({"wallet": addr})
         existing_set.add(addr.lower())
         added += 1
-
     save_wallets(existing)
     return {"added": added, "skipped": skipped, "invalid": invalid}
 
@@ -125,7 +123,7 @@ async def api_delete_wallet(address: str):
 # Leaderboard
 
 @app.get("/api/leaderboard")
-async def api_leaderboard(limit: int = 50):
+async def api_leaderboard(limit: int = 200):
     wallets = load_wallets()
     if not wallets:
         raise HTTPException(400, "Сначала добавь хотя бы один кошелёк")
@@ -137,12 +135,66 @@ async def api_leaderboard(limit: int = 50):
         raise HTTPException(500, str(e))
 
 # ---------------------------------------------------------------------------
+# Core run logic (shared between /api/run and /api/run-top)
+
+async def _do_run(wallet: str, target: int, manual_duration: Optional[int]):
+    if manual_duration:
+        score = target
+        duration = manual_duration
+    else:
+        score = target + random.randint(-100, 100)
+        score = round(score / 10) * 10
+        duration = int(score / 13.5) + random.randint(-30, 30)
+
+    await broadcast({"type": "run_started", "wallet": wallet, "score": score})
+
+    try:
+        async with httpx.AsyncClient(proxy=PROXY, timeout=30) as client:
+            token = await get_cached_token(wallet)
+            auth_headers = {**BASE_HEADERS, "Authorization": f"Bearer {token}"}
+
+            start_res = await client.post(
+                "https://api-pizza-game.dlicom.io/v1/game-session/start",
+                headers=auth_headers,
+            )
+            if not start_res.is_success:
+                raise Exception(f"start: HTTP {start_res.status_code}")
+
+            session_id = start_res.json()["session"]["id"]
+            await asyncio.sleep(10)
+
+            encrypted = encrypt_payload(
+                {"id": session_id, "score": score, "duration": duration},
+                wallet, session_id,
+            )
+            end_res = await client.post(
+                "https://api-pizza-game.dlicom.io/v1/game-session/end",
+                headers=auth_headers,
+                content=json.dumps({"data": encrypted}),
+            )
+            result = end_res.json()
+
+        await broadcast({
+            "type": "run_done",
+            "wallet": wallet,
+            "score": score,
+            "result": result,
+        })
+
+    except Exception as e:
+        await broadcast({
+            "type": "run_error",
+            "wallet": wallet,
+            "error": str(e),
+        })
+
+# ---------------------------------------------------------------------------
 # Run sessions
 
 class RunBody(BaseModel):
     wallets: List[str]
     score: int
-    duration: Optional[int] = None  # если не указан — считается автоматически
+    duration: Optional[int] = None
 
 @app.post("/api/run")
 async def api_run(body: RunBody):
@@ -150,62 +202,48 @@ async def api_run(body: RunBody):
         raise HTTPException(400, "Нет кошельков")
     if body.score <= 0:
         raise HTTPException(400, "Score должен быть > 0")
-
-    async def do_run(wallet: str, target: int, manual_duration: Optional[int]):
-        if manual_duration:
-            score = target
-            duration = manual_duration
-        else:
-            score = target + random.randint(-100, 100)
-            score = round(score / 10) * 10
-            duration = int(score / 13.5) + random.randint(-30, 30)
-
-        await broadcast({"type": "run_started", "wallet": wallet, "score": score})
-
-        try:
-            async with httpx.AsyncClient(proxy=PROXY, timeout=30) as client:
-                token = await get_cached_token(wallet)
-                auth_headers = {**BASE_HEADERS, "Authorization": f"Bearer {token}"}
-
-                start_res = await client.post(
-                    "https://api-pizza-game.dlicom.io/v1/game-session/start",
-                    headers=auth_headers,
-                )
-                if not start_res.is_success:
-                    raise Exception(f"start: HTTP {start_res.status_code}")
-
-                session_id = start_res.json()["session"]["id"]
-                await asyncio.sleep(10)
-
-                encrypted = encrypt_payload(
-                    {"id": session_id, "score": score, "duration": duration},
-                    wallet, session_id,
-                )
-                end_res = await client.post(
-                    "https://api-pizza-game.dlicom.io/v1/game-session/end",
-                    headers=auth_headers,
-                    content=json.dumps({"data": encrypted}),
-                )
-                result = end_res.json()
-
-            await broadcast({
-                "type": "run_done",
-                "wallet": wallet,
-                "score": score,
-                "result": result,
-            })
-
-        except Exception as e:
-            await broadcast({
-                "type": "run_error",
-                "wallet": wallet,
-                "error": str(e),
-            })
-
     for wallet in body.wallets:
-        asyncio.create_task(do_run(wallet, body.score, body.duration))
-
+        asyncio.create_task(_do_run(wallet, body.score, body.duration))
     return {"ok": True, "queued": len(body.wallets)}
+
+# ---------------------------------------------------------------------------
+# Run-top: автоматически выводит все кошельки в топ
+
+class RunTopBody(BaseModel):
+    wallets: Optional[List[str]] = None   # None = все кошельки из wallets.json
+    start_rank: int = 0                    # 0 = целимся с позиции #1
+
+@app.post("/api/run-top")
+async def api_run_top(body: RunTopBody):
+    wallets_data = load_wallets()
+    target_wallets = body.wallets if body.wallets is not None else [w["wallet"] for w in wallets_data]
+
+    if not target_wallets:
+        raise HTTPException(400, "Нет кошельков")
+
+    # Свежий лидерборд
+    try:
+        token = await get_cached_token(target_wallets[0])
+        needed = body.start_rank + len(target_wallets) + 5
+        top = await get_leaderboard_top(token, n=max(needed, 20))
+    except Exception as e:
+        raise HTTPException(500, f"Не удалось получить лидерборд: {e}")
+
+    plan = []
+    for i, wallet in enumerate(target_wallets):
+        pos = body.start_rank + i
+        bonus = SCORE_BONUSES[i] if i < len(SCORE_BONUSES) else 200
+        current = top[pos]["best_score"] if pos < len(top) else 0
+        target_score = current + bonus
+        plan.append({
+            "wallet": wallet,
+            "position": pos + 1,
+            "current_score": current,
+            "target_score": target_score,
+        })
+        asyncio.create_task(_do_run(wallet, target_score, None))
+
+    return {"ok": True, "queued": len(plan), "plan": plan}
 
 # ---------------------------------------------------------------------------
 # Serve frontend (должен быть последним)
