@@ -11,7 +11,7 @@ import httpx
 
 from bot import (
     get_token, encrypt_payload, get_leaderboard_top,
-    BASE_HEADERS, API_KEY, PROXY, HARDCODED_KEY, SCORE_BONUSES,
+    BASE_HEADERS, API_KEY, PROXY, HARDCODED_KEY, SCORE_BONUSES, get_proxy,
 )
 
 # ---------------------------------------------------------------------------
@@ -29,7 +29,7 @@ async def get_cached_token(wallet: str) -> str:
         token, expires_at = entry
         if time.time() < expires_at:
             return token
-    async with httpx.AsyncClient(proxy=PROXY, timeout=15) as client:
+    async with httpx.AsyncClient(proxy=get_proxy(),timeout=15) as client:
         token = await get_token(client, wallet)
     _token_cache[wallet.lower()] = (token, time.time() + TOKEN_TTL)
     return token
@@ -149,7 +149,7 @@ async def _do_run(wallet: str, target: int, manual_duration: Optional[int]):
     await broadcast({"type": "run_started", "wallet": wallet, "score": score})
 
     try:
-        async with httpx.AsyncClient(proxy=PROXY, timeout=30) as client:
+        async with httpx.AsyncClient(proxy=get_proxy(),timeout=30) as client:
             token = await get_cached_token(wallet)
             auth_headers = {**BASE_HEADERS, "Authorization": f"Bearer {token}"}
 

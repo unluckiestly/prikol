@@ -11,7 +11,19 @@ import httpx
 # --- конфиг ---
 HARDCODED_KEY = "431d2071225ef024356161fe295a1b1c55aa449c599c844607ebc291259e099aca5be1cb39683ac0f4ab5a2bf3cd8b61"
 API_KEY = "$2a$12$PxzudDtnM61RKttX18F.8.XuNPSNa8EkrPvz7iyH1QBef9otHAjUm"
-PROXY = None  # "http://user:pass@ip:port"
+
+PROXIES = [
+    "http://XHfBgD:CcSK84@196.17.223.96:8000",
+    "http://XHfBgD:CcSK84@196.17.223.168:8000",
+    "http://XHfBgD:CcSK84@196.16.244.211:8000",
+    "http://XHfBgD:CcSK84@196.17.223.216:8000",
+    "http://XHfBgD:CcSK84@196.18.227.154:8000",
+]
+
+def get_proxy() -> str:
+    return random.choice(PROXIES)
+
+PROXY = None  # оставлен для совместимости, используй get_proxy()
 
 # бонусы к score относительно текущего топа
 # индекс = место в топе (0 = #1), значение = сколько прибавить
@@ -77,7 +89,7 @@ async def check_registered(client: httpx.AsyncClient, wallet: str) -> bool:
 
 async def get_leaderboard_top(token: str, n: int = 10) -> list[dict]:
     """Возвращает топ N записей лидерборда."""
-    async with httpx.AsyncClient(proxy=PROXY, timeout=15) as client:
+    async with httpx.AsyncClient(proxy=get_proxy(),timeout=15) as client:
         res = await client.get(
             f"https://api-pizza-game.dlicom.io/v1/users/leaderboard?page=1&limit={n}",
             headers={
@@ -115,7 +127,7 @@ async def run_wallet(idx: int, wallet: str, target_score: int):
     duration = 0
 
     try:
-        async with httpx.AsyncClient(proxy=PROXY, timeout=30) as client:
+        async with httpx.AsyncClient(proxy=get_proxy(),timeout=30) as client:
             token = await get_token(client, wallet)
             print(f"{label} токен получен")
 
@@ -158,7 +170,7 @@ async def main():
 
     # 1. проверка регистрации
     print("🔍 Проверяем регистрацию кошельков...\n")
-    async with httpx.AsyncClient(proxy=PROXY, timeout=15) as client:
+    async with httpx.AsyncClient(proxy=get_proxy(),timeout=15) as client:
         reg_results = await asyncio.gather(*[
             check_registered(client, w) for w in wallets
         ])
@@ -174,7 +186,7 @@ async def main():
     print(f"✅ Все {len(wallets)} кошельков зарегистрированы.\n")
 
     # 2. получаем токен первого кошелька для лидерборда
-    async with httpx.AsyncClient(proxy=PROXY, timeout=15) as client:
+    async with httpx.AsyncClient(proxy=get_proxy(),timeout=15) as client:
         first_token = await get_token(client, wallets[0])
 
     # 3. получаем топ лидерборда
