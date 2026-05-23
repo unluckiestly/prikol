@@ -158,6 +158,53 @@
   </div>
 </div>
 
+<!-- MANUAL RUN MODAL -->
+<div id="manual-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop p-4">
+  <div class="w-full max-w-[480px] bg-ink-900 border border-ink-800 rounded-2xl shadow-2xl animate-slideIn">
+    <div class="px-6 pt-6 pb-2 flex items-start justify-between">
+      <div>
+        <div class="text-[11px] uppercase tracking-widest text-pizza-crust font-semibold">Ручной запуск</div>
+        <h3 class="text-xl font-bold mt-1">Кастомная сессия</h3>
+      </div>
+      <button id="manual-modal-close" class="text-ink-500 hover:text-ink-200 transition-colors p-1 -mr-1 -mt-1">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5l-10 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="px-6 py-4 space-y-4">
+      <div>
+        <label class="text-xs uppercase tracking-wider text-ink-400 font-semibold">Кошелёк</label>
+        <input id="manual-wallet" type="text" class="input w-full px-4 py-3 font-mono text-sm mt-2" placeholder="0x…" autocomplete="off" />
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs uppercase tracking-wider text-ink-400 font-semibold">Score</label>
+          <div class="relative mt-2">
+            <input id="manual-score" type="number" class="input w-full px-4 py-3 font-mono text-sm tnum" placeholder="65000" />
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-ink-500 font-mono">pts</span>
+          </div>
+        </div>
+        <div>
+          <label class="text-xs uppercase tracking-wider text-ink-400 font-semibold">Duration</label>
+          <div class="relative mt-2">
+            <input id="manual-duration" type="number" class="input w-full px-4 py-3 font-mono text-sm tnum" placeholder="4800" />
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-ink-500 font-mono">сек</span>
+          </div>
+        </div>
+      </div>
+      <p class="text-xs text-ink-500 font-mono">Если duration не заполнен — считается автоматически (score / 13.5)</p>
+    </div>
+    <div class="px-6 py-4 border-t border-ink-800 flex items-center justify-end gap-2">
+      <button id="manual-modal-cancel" class="btn-ghost px-4 py-2.5 rounded-lg text-sm font-medium">Отмена</button>
+      <button id="manual-modal-launch" class="btn-primary px-5 py-2.5 rounded-lg text-sm flex items-center gap-2">
+        <span id="manual-launch-text">Запустить</span>
+        <svg id="manual-spinner" class="hidden animate-spin" width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.5" stroke-dasharray="28" stroke-dashoffset="10" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- BULK IMPORT MODAL -->
 <div id="bulk-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop p-4">
   <div class="w-full max-w-[520px] bg-ink-900 border border-ink-800 rounded-2xl shadow-2xl animate-slideIn">
@@ -412,11 +459,16 @@ function renderWallets() {
         <h1 class="text-3xl font-bold mt-1 tracking-tight">Кошельки</h1>
         <p class="text-ink-400 text-sm mt-1">${state.wallets.length} подключено</p>
       </div>
+      <div class="flex items-center gap-2">
+      <button id="manual-run-btn" class="btn-ghost px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 2h9v9H2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M5 5h3M5 8h3M6.5 5v3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Ручной запуск
+      </button>
       <button id="refresh-wallets-btn" class="btn-ghost px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2">
         <svg id="refresh-wallets-icon" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M12 2v3.5H8.5M2 12V8.5h3.5M11.3 5.5A4.5 4.5 0 0 0 3 6.6M2.7 8.5A4.5 4.5 0 0 0 11 7.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Обновить
       </button>
-    </div>
+      </div>
 
     ${state.wallets.length === 0 ? `
       <div class="bg-ink-900/40 border border-ink-800 border-dashed rounded-2xl p-12 text-center mb-6">
@@ -538,6 +590,10 @@ function bindMainEvents() {
       refreshWalletsBtn.disabled = false;
     });
   }
+
+  // manual run button
+  const manualBtn = document.getElementById('manual-run-btn');
+  if (manualBtn) manualBtn.addEventListener('click', openManualModal);
 
   // bulk import button
   const bulkBtn = document.getElementById('bulk-import-btn');
@@ -673,6 +729,55 @@ document.getElementById('modal-launch').addEventListener('click', async () => {
     showToast('error', '❌ ' + e.message);
     setLaunchIdle();
     closeModal();
+  }
+});
+
+// ─── manual run ────────────────────────────────────────────────────────────
+const manualModal = document.getElementById('manual-modal');
+
+function openManualModal() {
+  document.getElementById('manual-wallet').value = '';
+  document.getElementById('manual-score').value = '';
+  document.getElementById('manual-duration').value = '';
+  manualModal.classList.remove('hidden');
+  manualModal.classList.add('flex');
+  setTimeout(() => document.getElementById('manual-wallet').focus(), 50);
+}
+function closeManualModal() {
+  manualModal.classList.add('hidden');
+  manualModal.classList.remove('flex');
+}
+
+document.getElementById('manual-modal-close').addEventListener('click', closeManualModal);
+document.getElementById('manual-modal-cancel').addEventListener('click', closeManualModal);
+manualModal.addEventListener('click', e => { if (e.target === manualModal) closeManualModal(); });
+
+document.getElementById('manual-modal-launch').addEventListener('click', async () => {
+  const wallet   = document.getElementById('manual-wallet').value.trim();
+  const score    = parseInt(document.getElementById('manual-score').value) || 0;
+  const duration = parseInt(document.getElementById('manual-duration').value) || null;
+
+  if (!/^0x[a-fA-F0-9]{40}$/.test(wallet)) { showToast('error', 'Невалидный адрес кошелька'); return; }
+  if (score <= 0) { showToast('error', 'Введи score > 0'); return; }
+
+  const btn = document.getElementById('manual-modal-launch');
+  btn.disabled = true;
+  document.getElementById('manual-launch-text').textContent = 'Запускаем…';
+  document.getElementById('manual-spinner').classList.remove('hidden');
+
+  try {
+    await apiFetch('/api/run', {
+      method: 'POST',
+      body: JSON.stringify({ wallets: [wallet], score, duration }),
+    });
+    closeManualModal();
+    // результат придёт через WebSocket
+  } catch (e) {
+    showToast('error', '❌ ' + e.message);
+  } finally {
+    btn.disabled = false;
+    document.getElementById('manual-launch-text').textContent = 'Запустить';
+    document.getElementById('manual-spinner').classList.add('hidden');
   }
 });
 

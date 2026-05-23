@@ -142,6 +142,7 @@ async def api_leaderboard(limit: int = 50):
 class RunBody(BaseModel):
     wallets: List[str]
     score: int
+    duration: Optional[int] = None  # если не указан — считается автоматически
 
 @app.post("/api/run")
 async def api_run(body: RunBody):
@@ -150,10 +151,14 @@ async def api_run(body: RunBody):
     if body.score <= 0:
         raise HTTPException(400, "Score должен быть > 0")
 
-    async def do_run(wallet: str, target: int):
-        score = target + random.randint(-100, 100)
-        score = round(score / 10) * 10
-        duration = int(score / 13.5) + random.randint(-30, 30)
+    async def do_run(wallet: str, target: int, manual_duration: Optional[int]):
+        if manual_duration:
+            score = target
+            duration = manual_duration
+        else:
+            score = target + random.randint(-100, 100)
+            score = round(score / 10) * 10
+            duration = int(score / 13.5) + random.randint(-30, 30)
 
         await broadcast({"type": "run_started", "wallet": wallet, "score": score})
 
@@ -198,7 +203,7 @@ async def api_run(body: RunBody):
             })
 
     for wallet in body.wallets:
-        asyncio.create_task(do_run(wallet, body.score))
+        asyncio.create_task(do_run(wallet, body.score, body.duration))
 
     return {"ok": True, "queued": len(body.wallets)}
 
