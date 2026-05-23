@@ -1,5 +1,8 @@
 [
   {
+    "wallet": "0x122a59f5c614333f6ec7bca583d2a09d3d43e5a4"
+  },
+  {
     "wallet": "0xe36acd3ba163ab57a061501d5556402a5e0c4378"
   },
   {
@@ -19,9 +22,6 @@
   },
   {
     "wallet": "0xc32fcc9cd4bcd4614cbf4f38af070e9227dbab50"
-  },
-  {
-    "wallet": "0x122a59f5c614333f6ec7bca583d2a09d3d43e5a4"
   },
   {
     "wallet": "0x262AA9f91AcA10192A97944Ec4faD877c3806549"
