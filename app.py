@@ -18,6 +18,22 @@ from bot import (
 WALLETS_FILE = Path("wallets.json")
 app = FastAPI()
 
+# кеш токенов: { wallet_addr: (token, expires_at) }
+_token_cache: dict = {}
+TOKEN_TTL = 23 * 3600  # 23 часа (токен живёт 24ч, берём с запасом)
+
+async def get_cached_token(wallet: str) -> str:
+    import time
+    entry = _token_cache.get(wallet.lower())
+    if entry:
+        token, expires_at = entry
+        if time.time() < expires_at:
+            return token
+    async with httpx.AsyncClient(proxy=PROXY, timeout=15) as client:
+        token = await get_token(client, wallet)
+    _token_cache[wallet.lower()] = (token, time.time() + TOKEN_TTL)
+    return token
+
 # WebSocket broadcast
 clients: list[WebSocket] = []
 
@@ -114,8 +130,7 @@ async def api_leaderboard(limit: int = 50):
     if not wallets:
         raise HTTPException(400, "Сначала добавь хотя бы один кошелёк")
     try:
-        async with httpx.AsyncClient(proxy=PROXY, timeout=15) as client:
-            token = await get_token(client, wallets[0]["wallet"])
+        token = await get_cached_token(wallets[0]["wallet"])
         results = await get_leaderboard_top(token, n=limit)
         return {"results": results}
     except Exception as e:
@@ -144,7 +159,7 @@ async def api_run(body: RunBody):
 
         try:
             async with httpx.AsyncClient(proxy=PROXY, timeout=30) as client:
-                token = await get_token(client, wallet)
+                token = await get_cached_token(wallet)
                 auth_headers = {**BASE_HEADERS, "Authorization": f"Bearer {token}"}
 
                 start_res = await client.post(
