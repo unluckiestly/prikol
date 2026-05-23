@@ -113,10 +113,13 @@ async def api_leaderboard(limit: int = 50):
     wallets = load_wallets()
     if not wallets:
         raise HTTPException(400, "Сначала добавь хотя бы один кошелёк")
-    async with httpx.AsyncClient(proxy=PROXY, timeout=15) as client:
-        token = await get_token(client, wallets[0]["wallet"])
-    results = await get_leaderboard_top(token, n=limit)
-    return {"results": results}
+    try:
+        async with httpx.AsyncClient(proxy=PROXY, timeout=15) as client:
+            token = await get_token(client, wallets[0]["wallet"])
+        results = await get_leaderboard_top(token, n=limit)
+        return {"results": results}
+    except Exception as e:
+        raise HTTPException(500, str(e))
 
 # ---------------------------------------------------------------------------
 # Run sessions
