@@ -159,6 +159,47 @@
   </div>
 </div>
 
+<!-- SET-SCORE MODAL -->
+<div id="setscore-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop p-4">
+  <div class="w-full max-w-[420px] bg-ink-900 border border-ink-800 rounded-2xl shadow-2xl animate-slideIn">
+    <div class="px-6 pt-6 pb-2 flex items-start justify-between">
+      <div>
+        <div class="text-[11px] uppercase tracking-widest text-pizza-crust font-semibold">Массовый запуск</div>
+        <h3 class="text-xl font-bold mt-1">Задать score всем</h3>
+      </div>
+      <button id="setscore-close" class="text-ink-500 hover:text-ink-200 transition-colors p-1 -mr-1 -mt-1">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5l-10 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="px-6 py-5 space-y-4">
+      <div>
+        <label class="text-xs uppercase tracking-wider text-ink-400 font-semibold">Score</label>
+        <div class="relative mt-2">
+          <input id="setscore-input" type="number" class="input w-full px-4 py-3 font-mono text-lg tnum" placeholder="например 100000" />
+          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-ink-500 font-mono">pts</span>
+        </div>
+      </div>
+      <div>
+        <label class="text-xs uppercase tracking-wider text-ink-400 font-semibold">Duration <span class="text-ink-600 normal-case">(опционально)</span></label>
+        <div class="relative mt-2">
+          <input id="setscore-duration" type="number" class="input w-full px-4 py-3 font-mono text-sm tnum" placeholder="авто" />
+          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-ink-500 font-mono">сек</span>
+        </div>
+      </div>
+      <p id="setscore-info" class="text-xs text-ink-500 font-mono"></p>
+    </div>
+    <div class="px-6 py-4 border-t border-ink-800 flex items-center justify-end gap-2">
+      <button id="setscore-cancel" class="btn-ghost px-4 py-2.5 rounded-lg text-sm font-medium">Отмена</button>
+      <button id="setscore-launch" class="btn-primary px-5 py-2.5 rounded-lg text-sm flex items-center gap-2">
+        <span id="setscore-launch-text">Запустить всех</span>
+        <svg id="setscore-spinner" class="hidden animate-spin" width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.5" stroke-dasharray="28" stroke-dashoffset="10" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- RUN-TOP MODAL -->
 <div id="runtop-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop p-4">
   <div class="w-full max-w-[600px] bg-ink-900 border border-ink-800 rounded-2xl shadow-2xl animate-slideIn">
@@ -540,6 +581,10 @@ function renderWallets() {
           <svg id="refresh-wallets-icon" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M12 2v3.5H8.5M2 12V8.5h3.5M11.3 5.5A4.5 4.5 0 0 0 3 6.6M2.7 8.5A4.5 4.5 0 0 0 11 7.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Обновить
         </button>
+        <button id="set-score-btn" class="btn-ghost px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2v10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Задать score
+        </button>
         <button id="run-top-btn" class="btn-primary px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.5L7 12.5M7 1.5L3 5.5M7 1.5L11 5.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
           В топ
@@ -697,6 +742,10 @@ function bindMainEvents() {
       document.getElementById('m-spinner').classList.add('hidden');
     }
   });
+
+  // set-score button
+  const setScoreBtn = document.getElementById('set-score-btn');
+  if (setScoreBtn) setScoreBtn.addEventListener('click', openSetScoreModal);
 
   // run-top button
   const runTopBtn = document.getElementById('run-top-btn');
@@ -901,6 +950,58 @@ document.getElementById('bulk-modal-import').addEventListener('click', async () 
     btn.disabled = false;
     document.getElementById('bulk-import-text').textContent = 'Импортировать';
     document.getElementById('bulk-spinner').classList.add('hidden');
+  }
+});
+
+// ─── set-score modal ───────────────────────────────────────────────────────
+const setscoreModal = document.getElementById('setscore-modal');
+
+function openSetScoreModal() {
+  document.getElementById('setscore-input').value = '';
+  document.getElementById('setscore-duration').value = '';
+  document.getElementById('setscore-info').textContent = '';
+  setscoreModal.classList.remove('hidden');
+  setscoreModal.classList.add('flex');
+  setTimeout(() => document.getElementById('setscore-input').focus(), 50);
+}
+function closeSetScoreModal() {
+  setscoreModal.classList.add('hidden');
+  setscoreModal.classList.remove('flex');
+}
+
+document.getElementById('setscore-input').addEventListener('input', () => {
+  const score = parseInt(document.getElementById('setscore-input').value) || 0;
+  const n = state.wallets.length;
+  document.getElementById('setscore-info').textContent =
+    score > 0 && n > 0 ? `Запустится ${n} сессий с score ${score.toLocaleString('ru-RU')} pts` : '';
+});
+
+document.getElementById('setscore-close').addEventListener('click', closeSetScoreModal);
+document.getElementById('setscore-cancel').addEventListener('click', closeSetScoreModal);
+setscoreModal.addEventListener('click', e => { if (e.target === setscoreModal) closeSetScoreModal(); });
+
+document.getElementById('setscore-launch').addEventListener('click', async () => {
+  const score    = parseInt(document.getElementById('setscore-input').value) || 0;
+  const duration = parseInt(document.getElementById('setscore-duration').value) || null;
+  if (score <= 0) { showToast('error', 'Введи score > 0'); return; }
+  if (!state.wallets.length) { showToast('error', 'Нет кошельков'); return; }
+
+  const btn  = document.getElementById('setscore-launch');
+  const text = document.getElementById('setscore-launch-text');
+  const spin = document.getElementById('setscore-spinner');
+  btn.disabled = true; text.textContent = 'Запускаем…'; spin.classList.remove('hidden');
+
+  try {
+    const res = await apiFetch('/api/run', {
+      method: 'POST',
+      body: JSON.stringify({ wallets: state.wallets.map(w => w.wallet), score, duration }),
+    });
+    closeSetScoreModal();
+    showToast('ok', `🍕 Запущено ${res.queued} сессий → ${score.toLocaleString('ru-RU')} pts`);
+  } catch (e) {
+    showToast('error', '❌ ' + e.message);
+  } finally {
+    btn.disabled = false; text.textContent = 'Запустить всех'; spin.classList.add('hidden');
   }
 });
 
