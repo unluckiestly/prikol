@@ -251,17 +251,13 @@ async function fetchWallets() {
 }
 
 async function fetchLeaderboard() {
-  if (state._lbFetching) return;
-  state._lbFetching = true;
   try {
-    const data = await apiFetch('/api/leaderboard?limit=50');
+    const data = await apiFetch('/api/leaderboard?limit=200');
     state.leaderboard = data.results || [];
     state.lastUpdate = new Date();
     render();
   } catch (e) {
     showToast('error', '❌ Лидерборд: ' + e.message);
-  } finally {
-    state._lbFetching = false;
   }
 }
 
@@ -309,11 +305,7 @@ function render() {
   positionTabPill();
   document.getElementById('wallet-count-pill').textContent = state.wallets.length;
   if (state.tab === 'leaderboard') mainEl.innerHTML = renderLeaderboard();
-  if (state.tab === 'wallets') {
-    mainEl.innerHTML = renderWallets();
-    // всегда тянем свежий лидерборд когда открыт таб кошельков
-    if (!state._lbFetching) fetchLeaderboard();
-  }
+  if (state.tab === 'wallets')     mainEl.innerHTML = renderWallets();
   if (state.tab === 'manual')      mainEl.innerHTML = renderManual();
   bindMainEvents();
 }
@@ -324,6 +316,7 @@ const tabPill  = document.getElementById('tab-pill');
 tabBtns.forEach(b => b.addEventListener('click', () => {
   state.tab = b.dataset.tab;
   render();
+  if (b.dataset.tab === 'wallets') fetchLeaderboard();
 }));
 
 function positionTabPill() {
@@ -470,20 +463,26 @@ function renderLeaderboard() {
 
 // ─── WALLETS ───────────────────────────────────────────────────────────────
 function renderWallets() {
-  const rankByAddr = {};
+  // строим map моих адресов
+  const mySet = new Set(state.wallets.map(w => w.wallet.toLowerCase()));
+
+  // проходим по лидерборду (тот же источник, что и в табе лидерборда)
+  // и собираем данные только для наших кошельков
+  const found = {};   // lower addr → {wallet, rank, score}
   state.leaderboard.forEach((r, i) => {
-    if (r.address) rankByAddr[r.address.toLowerCase()] = { rank: i+1, score: r.best_score ?? 0 };
+    const lo = (r.address || '').toLowerCase();
+    if (mySet.has(lo)) {
+      found[lo] = { wallet: r.address, rank: i + 1, score: r.best_score ?? 0 };
+    }
   });
 
-  // сортируем: сначала по месту (asc), потом по score (desc), неранкнутые в конец
-  const sorted = [...state.wallets].sort((a, b) => {
-    const ia = rankByAddr[a.wallet.toLowerCase()];
-    const ib = rankByAddr[b.wallet.toLowerCase()];
-    if (ia && ib) return ia.rank - ib.rank;
-    if (ia) return -1;
-    if (ib) return 1;
-    return 0;
-  });
+  // итоговый список: найденные (по рангу ↑) + ненайденные
+  const ranked   = Object.values(found).sort((a, b) => a.rank - b.rank);
+  const rankedLo = new Set(ranked.map(r => r.wallet.toLowerCase()));
+  const unranked = state.wallets
+    .filter(w => !rankedLo.has(w.wallet.toLowerCase()))
+    .map(w => ({ wallet: w.wallet, rank: null, score: null }));
+  const sorted = [...ranked, ...unranked];
 
   return `
   <section class="tabpanel">
@@ -511,7 +510,6 @@ function renderWallets() {
           <div>Адрес</div><div class="text-right">Место</div><div class="text-right">Score</div><div></div>
         </div>
         ${sorted.map(w => {
-          const info = rankByAddr[w.wallet.toLowerCase()];
           return `
           <div class="row grid grid-cols-[1fr_140px_160px_220px] items-center px-6 py-4 border-b border-ink-800/60 last:border-0">
             <div class="flex items-center gap-3">
@@ -522,13 +520,13 @@ function renderWallets() {
               </div>
             </div>
             <div class="text-right">
-              ${info ? `<div class="font-mono tnum text-base font-semibold">#${info.rank}</div>` : `<div class="text-ink-500 text-sm">—</div>`}
+              ${w.rank !== null ? `<div class="font-mono tnum text-base font-semibold">#${w.rank}</div>` : `<div class="text-ink-500 text-sm">—</div>`}
             </div>
             <div class="text-right">
-              ${info ? `<div class="font-mono tnum text-base font-semibold">${info.score.toLocaleString('ru-RU')}</div>` : `<div class="text-ink-500 text-sm">вне топа</div>`}
+              ${w.score !== null ? `<div class="font-mono tnum text-base font-semibold">${w.score.toLocaleString('ru-RU')}</div>` : `<div class="text-ink-500 text-sm">${state.leaderboard.length ? 'вне топа' : '…'}</div>`}
             </div>
             <div class="flex justify-end gap-2">
-              <button data-action="wallet-launch" data-addr="${w.wallet}" data-score="${info?.score ?? 0}"
+              <button data-action="wallet-launch" data-addr="${w.wallet}" data-score="${w.score ?? 0}"
                 class="btn-primary px-4 py-2 rounded-lg text-xs flex items-center gap-1.5">
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 1.5v7l6.5-3.5L2 1.5Z" fill="currentColor"/></svg>
                 Запустить
@@ -624,6 +622,7 @@ function bindMainEvents() {
       await Promise.all([fetchWallets(), fetchLeaderboard()]);
       icon.classList.remove('animate-spin');
       refreshWalletsBtn.disabled = false;
+      showToast('ok', '✅ Данные обновлены');
     });
   }
 
