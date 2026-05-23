@@ -430,7 +430,11 @@ function renderLeaderboard() {
               </div>
             </div>
             <div class="text-right font-mono tnum text-base font-semibold">${score.toLocaleString('ru-RU')}</div>
-            <div class="flex justify-end">
+            <div class="flex justify-end items-center gap-2">
+              <button data-action="copy-addr" data-addr="${addr}"
+                class="btn-ghost px-2.5 py-2 rounded-lg text-xs font-medium flex items-center gap-1.5 hover:!border-ink-500" title="Скопировать адрес">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.2" stroke="currentColor" stroke-width="1.2"/><path d="M3 8H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+              </button>
               <button data-action="place-higher" data-rank="${i}" data-score="${score}" data-addr="${addr}"
                 class="btn-ghost px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-1.5 hover:!border-pizza-ember/50 hover:!text-pizza-crust">
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 1.5L5 8.5M5 1.5L2 4.5M5 1.5L8 4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -536,6 +540,13 @@ function renderWallets() {
 
 // ─── events ────────────────────────────────────────────────────────────────
 function bindMainEvents() {
+  // copy address
+  mainEl.querySelectorAll('[data-action="copy-addr"]').forEach(b => b.addEventListener('click', () => {
+    navigator.clipboard.writeText(b.dataset.addr).then(() => {
+      showToast('ok', '📋 ' + short(b.dataset.addr) + ' скопирован');
+    });
+  }));
+
   // place higher
   mainEl.querySelectorAll('[data-action="place-higher"]').forEach(b => b.addEventListener('click', () => {
     const score = parseInt(b.dataset.score) + 300;
