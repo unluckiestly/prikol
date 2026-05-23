@@ -244,5 +244,32 @@ async def api_run_top(body: RunTopBody):
     return {"ok": True, "queued": len(plan), "plan": plan}
 
 # ---------------------------------------------------------------------------
+# Run sessions for leaderboard wallets
+
+class RunLeaderboardBody(BaseModel):
+    score: int
+    duration: Optional[int] = None
+    limit: int = 50   # сколько позиций из топа трогать
+
+@app.post("/api/run-leaderboard")
+async def api_run_leaderboard(body: RunLeaderboardBody):
+    if body.score <= 0:
+        raise HTTPException(400, "Score должен быть > 0")
+    try:
+        token = await get_cached_token(LEADERBOARD_WALLET)
+        top = await get_leaderboard_top(token, n=body.limit)
+    except Exception as e:
+        raise HTTPException(500, f"Не удалось получить лидерборд: {e}")
+
+    wallets = [r["address"] for r in top if r.get("address")]
+    if not wallets:
+        raise HTTPException(400, "Лидерборд пуст")
+
+    for wallet in wallets:
+        asyncio.create_task(_do_run(wallet, body.score, body.duration))
+
+    return {"ok": True, "queued": len(wallets)}
+
+# ---------------------------------------------------------------------------
 # Serve frontend (должен быть последним)
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
