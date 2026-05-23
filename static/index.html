@@ -294,7 +294,12 @@ function render() {
 // ─── tabs ──────────────────────────────────────────────────────────────────
 const tabBtns = [...document.querySelectorAll('.tab-btn')];
 const tabPill  = document.getElementById('tab-pill');
-tabBtns.forEach(b => b.addEventListener('click', () => { state.tab = b.dataset.tab; render(); }));
+tabBtns.forEach(b => b.addEventListener('click', () => {
+  state.tab = b.dataset.tab;
+  render();
+  // при переключении на кошельки — тянем свежий лидерборд для актуальных мест/скоров
+  if (b.dataset.tab === 'wallets') fetchLeaderboard();
+}));
 
 function positionTabPill() {
   tabBtns.forEach(b => {
