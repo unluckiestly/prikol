@@ -200,6 +200,21 @@
 <script>
 // ─── helpers ───────────────────────────────────────────────────────────────
 const short = a => a.slice(0,6) + '…' + a.slice(-4);
+
+function copyText(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+  // fallback для HTTP (без HTTPS clipboard API недоступен)
+  const el = document.createElement('textarea');
+  el.value = text;
+  el.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+  document.body.appendChild(el);
+  el.focus(); el.select();
+  document.execCommand('copy');
+  document.body.removeChild(el);
+  return Promise.resolve();
+}
 function timeAgo(d) {
   const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
   if (s < 5)  return 'только что';
@@ -423,8 +438,8 @@ function renderLeaderboard() {
             <div>${medal}</div>
             <div class="flex items-center gap-3">
               <div class="w-7 h-7 rounded-md ${mine ? 'bg-pizza-ember/15 border border-pizza-ember/30' : 'bg-ink-800 border border-ink-700'} grid place-items-center text-[10px] font-bold ${mine ? 'text-pizza-crust' : 'text-ink-400'}">${addr.slice(2,4).toUpperCase() || '??'}</div>
-              <div>
-                <div class="font-mono text-sm">${addr ? short(addr) : '—'}</div>
+              <div class="min-w-0">
+                <div class="font-mono text-xs text-ink-200 break-all leading-snug">${addr || '—'}</div>
                 ${mine ? `<div class="text-[10px] uppercase tracking-wider text-pizza-crust font-semibold mt-0.5">мой кошелёк</div>` : ''}
               </div>
             </div>
@@ -536,7 +551,7 @@ function renderWallets() {
 function bindMainEvents() {
   // copy address
   mainEl.querySelectorAll('[data-action="copy-addr"]').forEach(b => b.addEventListener('click', () => {
-    navigator.clipboard.writeText(b.dataset.addr).then(() => {
+    copyText(b.dataset.addr).then(() => {
       showToast('ok', '📋 ' + short(b.dataset.addr) + ' скопирован');
     });
   }));
