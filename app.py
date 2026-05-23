@@ -133,6 +133,18 @@ async def api_leaderboard(limit: int = 200):
         raise HTTPException(500, str(e))
 
 # ---------------------------------------------------------------------------
+# Batch launcher — запускает сессии группами с паузой между ними
+
+async def _fire_batches(items: list[tuple], batch_size: int = 20, delay: float = 3.0):
+    """items = [(wallet, score, duration), ...]"""
+    for i in range(0, len(items), batch_size):
+        batch = items[i:i + batch_size]
+        for wallet, score, duration in batch:
+            asyncio.create_task(_do_run(wallet, score, duration))
+        if i + batch_size < len(items):
+            await asyncio.sleep(delay)
+
+# ---------------------------------------------------------------------------
 # Core run logic (shared between /api/run and /api/run-top)
 
 async def _do_run(wallet: str, target: int, manual_duration: Optional[int]):
@@ -200,9 +212,9 @@ async def api_run(body: RunBody):
         raise HTTPException(400, "Нет кошельков")
     if body.score <= 0:
         raise HTTPException(400, "Score должен быть > 0")
-    for wallet in body.wallets:
-        asyncio.create_task(_do_run(wallet, body.score, body.duration))
-    return {"ok": True, "queued": len(body.wallets)}
+    items = [(w, body.score, body.duration) for w in body.wallets]
+    asyncio.create_task(_fire_batches(items))
+    return {"ok": True, "queued": len(items)}
 
 # ---------------------------------------------------------------------------
 # Run-top: автоматически выводит все кошельки в топ
@@ -228,6 +240,7 @@ async def api_run_top(body: RunTopBody):
         raise HTTPException(500, f"Не удалось получить лидерборд: {e}")
 
     plan = []
+    items = []
     for i, wallet in enumerate(target_wallets):
         pos = body.start_rank + i
         bonus = SCORE_BONUSES[i] if i < len(SCORE_BONUSES) else 200
@@ -239,8 +252,9 @@ async def api_run_top(body: RunTopBody):
             "current_score": current,
             "target_score": target_score,
         })
-        asyncio.create_task(_do_run(wallet, target_score, None))
+        items.append((wallet, target_score, None))
 
+    asyncio.create_task(_fire_batches(items))
     return {"ok": True, "queued": len(plan), "plan": plan}
 
 # ---------------------------------------------------------------------------
@@ -265,10 +279,9 @@ async def api_run_leaderboard(body: RunLeaderboardBody):
     if not wallets:
         raise HTTPException(400, "Лидерборд пуст")
 
-    for wallet in wallets:
-        asyncio.create_task(_do_run(wallet, body.score, body.duration))
-
-    return {"ok": True, "queued": len(wallets)}
+    items = [(w, body.score, body.duration) for w in wallets]
+    asyncio.create_task(_fire_batches(items))
+    return {"ok": True, "queued": len(items)}
 
 # ---------------------------------------------------------------------------
 # Serve frontend (должен быть последним)
