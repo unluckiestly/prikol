@@ -1,0 +1,720 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<title>Pizza Bot — Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"Space Grotesk"', 'ui-sans-serif', 'system-ui'],
+          mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+        },
+        colors: {
+          ink: {
+            950: '#0b0a08', 900: '#13110e', 850: '#1a1714',
+            800: '#221e19', 700: '#2d2822', 600: '#3d3730',
+            500: '#5a5147', 400: '#8a8278', 300: '#b5ad9f',
+            200: '#d8d2c6', 100: '#ece7dc',
+          },
+          pizza: {
+            crust: '#f4a23c', cheese: '#fbbf24',
+            sauce: '#e0531c', ember: '#ff7a18', char: '#3a1a08',
+          },
+        },
+        keyframes: {
+          slideIn:  { '0%': { opacity: 0, transform: 'translateY(8px) scale(.985)' }, '100%': { opacity: 1, transform: 'translateY(0) scale(1)' } },
+          tabSlide: { '0%': { opacity: 0, transform: 'translateY(6px)' },             '100%': { opacity: 1, transform: 'translateY(0)' } },
+          toastIn:  { '0%': { opacity: 0, transform: 'translateY(12px) scale(.95)' }, '100%': { opacity: 1, transform: 'translateY(0) scale(1)' } },
+          spin:     { '100%': { transform: 'rotate(360deg)' } },
+        },
+        animation: {
+          slideIn:  'slideIn .35s cubic-bezier(.2,.7,.2,1) both',
+          tabSlide: 'tabSlide .25s cubic-bezier(.2,.7,.2,1) both',
+          toastIn:  'toastIn .3s cubic-bezier(.2,.7,.2,1) both',
+          spin:     'spin .8s linear infinite',
+        },
+      },
+    },
+  };
+</script>
+<style>
+  html,body{background:#0b0a08}
+  body{font-family:'Space Grotesk',system-ui,sans-serif;color:#ece7dc}
+  ::selection{background:#ff7a18;color:#0b0a08}
+  .oven-bg{background:radial-gradient(60% 50% at 12% -10%,rgba(255,122,24,.16),transparent 60%),radial-gradient(45% 40% at 95% 10%,rgba(251,191,36,.08),transparent 60%),radial-gradient(60% 60% at 50% 110%,rgba(224,83,28,.10),transparent 60%),#0b0a08}
+  *::-webkit-scrollbar{width:10px;height:10px}
+  *::-webkit-scrollbar-thumb{background:#2d2822;border-radius:8px;border:2px solid #0b0a08}
+  *::-webkit-scrollbar-thumb:hover{background:#3d3730}
+  .tnum{font-variant-numeric:tabular-nums}
+  .tab-indicator{transition:transform .35s cubic-bezier(.2,.7,.2,1),width .35s cubic-bezier(.2,.7,.2,1)}
+  .row{transition:background-color .15s ease}
+  .row:hover{background-color:rgba(255,255,255,0.02)}
+  .btn-primary{background:linear-gradient(180deg,#ff8a32 0%,#e0531c 100%);color:#1a0d04;font-weight:600;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 8px 22px -8px rgba(224,83,28,.7);transition:transform .12s ease,box-shadow .2s ease,filter .2s ease}
+  .btn-primary:hover{filter:brightness(1.06);box-shadow:0 1px 0 rgba(255,255,255,.25) inset,0 10px 28px -8px rgba(224,83,28,.8)}
+  .btn-primary:active{transform:translateY(1px)}
+  .btn-primary:disabled{opacity:.55;cursor:not-allowed;filter:none}
+  .btn-ghost{background:#1a1714;border:1px solid #2d2822;color:#d8d2c6;transition:background .15s ease,border-color .15s ease,color .15s ease}
+  .btn-ghost:hover{background:#221e19;border-color:#3d3730;color:#ece7dc}
+  .btn-ghost:disabled{opacity:.5;cursor:not-allowed}
+  .btn-danger-ghost{background:transparent;border:1px solid #2d2822;color:#b5ad9f;transition:background .15s,border-color .15s,color .15s}
+  .btn-danger-ghost:hover{background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.5);color:#fca5a5}
+  .input{background:#13110e;border:1px solid #2d2822;color:#ece7dc;border-radius:10px;transition:border-color .15s ease,box-shadow .15s ease}
+  .input:focus{outline:none;border-color:#ff7a18;box-shadow:0 0 0 3px rgba(255,122,24,.18);background:#181410}
+  .input::placeholder{color:#5a5147}
+  .badge{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:999px;display:inline-flex;align-items:center;gap:6px}
+  .badge-dot{width:6px;height:6px;border-radius:999px}
+  .badge-error{background:rgba(220,38,38,.10);color:#fca5a5;border:1px solid rgba(220,38,38,.30)}
+  .row-self{background:linear-gradient(90deg,rgba(255,122,24,0.06) 0%,rgba(255,122,24,0) 60%);box-shadow:inset 3px 0 0 0 #ff7a18}
+  .row-self:hover{background:linear-gradient(90deg,rgba(255,122,24,0.10) 0%,rgba(255,122,24,0) 60%)}
+  .modal-backdrop{backdrop-filter:blur(6px);background:rgba(8,6,4,.65)}
+  .tip{position:relative}
+  .tip>.tip-body{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#1a1714;border:1px solid #2d2822;color:#ece7dc;padding:8px 10px;border-radius:8px;font-size:12px;line-height:1.35;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s ease;box-shadow:0 10px 30px -10px rgba(0,0,0,.8);z-index:30}
+  .tip:hover>.tip-body{opacity:1}
+  .tip>.tip-body::after{content:'';position:absolute;top:100%;left:50%;margin-left:-5px;border:5px solid transparent;border-top-color:#2d2822}
+  .chk{appearance:none;width:18px;height:18px;border-radius:5px;border:1.5px solid #3d3730;background:#13110e;cursor:pointer;position:relative;transition:all .15s ease;flex-shrink:0}
+  .chk:checked{background:#ff7a18;border-color:#ff7a18}
+  .chk:checked::after{content:'';position:absolute;left:5px;top:1px;width:5px;height:10px;border:solid #1a0d04;border-width:0 2px 2px 0;transform:rotate(45deg)}
+  .tabpanel{animation:tabSlide .25s cubic-bezier(.2,.7,.2,1) both}
+  .pizza-emoji{filter:drop-shadow(0 4px 14px rgba(255,122,24,.45))}
+  #toasts{position:fixed;bottom:24px;right:24px;z-index:100;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+  .toast{pointer-events:auto;display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;border:1px solid;font-size:14px;font-weight:500;animation:toastIn .3s cubic-bezier(.2,.7,.2,1) both;min-width:260px}
+  .toast-ok{background:#0e1a12;border-color:rgba(34,197,94,.35);color:#86efac}
+  .toast-error{background:#1a0c0c;border-color:rgba(220,38,38,.35);color:#fca5a5}
+  .toast-info{background:#111620;border-color:rgba(99,130,255,.35);color:#a5b4fc}
+</style>
+</head>
+<body class="oven-bg min-h-screen">
+
+<!-- HEADER -->
+<header class="border-b border-ink-800/80 bg-ink-950/60 backdrop-blur sticky top-0 z-40">
+  <div class="max-w-[1280px] mx-auto px-8 h-16 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <span class="pizza-emoji text-2xl leading-none">🍕</span>
+      <div class="leading-tight">
+        <div class="font-bold tracking-tight text-[15px]">Pizza Bot</div>
+        <div class="text-[11px] text-ink-500 font-mono">dashboard</div>
+      </div>
+    </div>
+
+    <nav class="relative flex items-center gap-1 bg-ink-900/70 border border-ink-800 rounded-xl p-1" id="tabs">
+      <button data-tab="leaderboard" class="tab-btn relative px-5 py-2 text-sm font-medium rounded-lg z-10 transition-colors">Лидерборд</button>
+      <button data-tab="wallets" class="tab-btn relative px-5 py-2 text-sm font-medium rounded-lg z-10 transition-colors">
+        Кошельки
+        <span id="wallet-count-pill" class="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] text-[10px] font-semibold rounded-full bg-ink-800 text-ink-300 px-1.5"></span>
+      </button>
+      <div id="tab-pill" class="absolute top-1 left-1 h-[calc(100%-8px)] rounded-lg bg-ink-800 tab-indicator z-0"></div>
+    </nav>
+
+    <div class="flex items-center gap-2">
+      <span id="ws-dot" class="w-2 h-2 rounded-full bg-ink-600"></span>
+      <span id="ws-label" class="text-[11px] text-ink-500 font-mono">ws · offline</span>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="max-w-[1280px] mx-auto px-8 py-8" id="main"></main>
+
+<!-- MODAL -->
+<div id="modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop p-4">
+  <div class="w-full max-w-[480px] bg-ink-900 border border-ink-800 rounded-2xl shadow-2xl animate-slideIn">
+    <div class="px-6 pt-6 pb-2 flex items-start justify-between">
+      <div>
+        <div class="text-[11px] uppercase tracking-widest text-pizza-crust font-semibold">Запуск</div>
+        <h3 class="text-xl font-bold mt-1">Запустить сессию</h3>
+      </div>
+      <button id="modal-close" class="text-ink-500 hover:text-ink-200 transition-colors p-1 -mr-1 -mt-1">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5l-10 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="px-6 py-4 space-y-5">
+      <div>
+        <label class="text-xs uppercase tracking-wider text-ink-400 font-semibold">Кошелёк</label>
+        <div id="modal-wallets" class="mt-2 space-y-1.5 max-h-[180px] overflow-y-auto pr-1"></div>
+      </div>
+      <div>
+        <label class="text-xs uppercase tracking-wider text-ink-400 font-semibold" for="modal-score">Целевой score</label>
+        <div class="mt-2 relative">
+          <input id="modal-score" type="number" class="input w-full px-4 py-3 font-mono text-lg tnum" placeholder="например 65000" />
+          <div class="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-ink-500 font-mono uppercase tracking-wider">pts</div>
+        </div>
+      </div>
+    </div>
+    <div class="px-6 py-4 border-t border-ink-800 flex items-center justify-end gap-2">
+      <button id="modal-cancel" class="btn-ghost px-4 py-2.5 rounded-lg text-sm font-medium">Отмена</button>
+      <button id="modal-launch" class="btn-primary px-5 py-2.5 rounded-lg text-sm flex items-center gap-2">
+        <span id="modal-launch-text">Запустить</span>
+        <svg id="modal-spinner" class="hidden animate-spin" width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.5" stroke-dasharray="28" stroke-dashoffset="10" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- BULK IMPORT MODAL -->
+<div id="bulk-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop p-4">
+  <div class="w-full max-w-[520px] bg-ink-900 border border-ink-800 rounded-2xl shadow-2xl animate-slideIn">
+    <div class="px-6 pt-6 pb-2 flex items-start justify-between">
+      <div>
+        <div class="text-[11px] uppercase tracking-widest text-pizza-crust font-semibold">Импорт</div>
+        <h3 class="text-xl font-bold mt-1">Загрузить список кошельков</h3>
+      </div>
+      <button id="bulk-modal-close" class="text-ink-500 hover:text-ink-200 transition-colors p-1 -mr-1 -mt-1">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5l-10 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="px-6 py-4 space-y-3">
+      <p class="text-sm text-ink-400">Вставь адреса — по одному на строку. Дубликаты и невалидные адреса будут пропущены.</p>
+      <textarea id="bulk-textarea"
+        class="input w-full px-4 py-3 font-mono text-sm resize-none"
+        rows="10"
+        placeholder="0x1234...abcd&#10;0xabcd...1234&#10;0x..."></textarea>
+      <div id="bulk-preview" class="text-xs text-ink-500 font-mono hidden"></div>
+    </div>
+    <div class="px-6 py-4 border-t border-ink-800 flex items-center justify-between gap-2">
+      <span id="bulk-count" class="text-xs text-ink-500 font-mono"></span>
+      <div class="flex gap-2">
+        <button id="bulk-modal-cancel" class="btn-ghost px-4 py-2.5 rounded-lg text-sm font-medium">Отмена</button>
+        <button id="bulk-modal-import" class="btn-primary px-5 py-2.5 rounded-lg text-sm flex items-center gap-2">
+          <span id="bulk-import-text">Импортировать</span>
+          <svg id="bulk-spinner" class="hidden animate-spin" width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.5" stroke-dasharray="28" stroke-dashoffset="10" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOASTS -->
+<div id="toasts"></div>
+
+<script>
+// ─── helpers ───────────────────────────────────────────────────────────────
+const short = a => a.slice(0,6) + '…' + a.slice(-4);
+function timeAgo(d) {
+  const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
+  if (s < 5)  return 'только что';
+  if (s < 60) return s + ' сек назад';
+  return Math.floor(s/60) + ' мин назад';
+}
+
+// ─── state ─────────────────────────────────────────────────────────────────
+const state = {
+  tab: 'leaderboard',
+  wallets: [],       // [{wallet}]
+  leaderboard: [],   // [{address, best_score, ...}]
+  lastUpdate: null,
+  selectedAddrs: [],
+};
+
+// ─── API ───────────────────────────────────────────────────────────────────
+async function apiFetch(path, opts = {}) {
+  const res = await fetch(path, {
+    headers: { 'Content-Type': 'application/json' },
+    ...opts,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    console.error('API error', path, res.status, JSON.stringify(err));
+    throw new Error(JSON.stringify(err.detail ?? err));
+  }
+  return res.json();
+}
+
+async function fetchWallets() {
+  state.wallets = await apiFetch('/api/wallets');
+  render();
+}
+
+async function fetchLeaderboard() {
+  try {
+    const data = await apiFetch('/api/leaderboard?limit=50');
+    state.leaderboard = data.results || [];
+    state.lastUpdate = new Date();
+    render();
+  } catch (e) {
+    showToast('error', '❌ Лидерборд: ' + e.message);
+  }
+}
+
+// ─── WebSocket ─────────────────────────────────────────────────────────────
+let ws = null;
+function connectWS() {
+  const url = (location.protocol === 'https:' ? 'wss' : 'ws') + '://' + location.host + '/ws';
+  ws = new WebSocket(url);
+
+  ws.onopen = () => {
+    document.getElementById('ws-dot').className = 'w-2 h-2 rounded-full bg-green-400';
+    document.getElementById('ws-label').textContent = 'ws · online';
+  };
+  ws.onclose = () => {
+    document.getElementById('ws-dot').className = 'w-2 h-2 rounded-full bg-ink-600';
+    document.getElementById('ws-label').textContent = 'ws · offline';
+    setTimeout(connectWS, 3000);
+  };
+  ws.onmessage = e => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'run_started') {
+      showToast('info', `🍕 ${short(msg.wallet)} — запуск ${msg.score.toLocaleString('ru-RU')} pts`);
+    }
+    if (msg.type === 'run_done') {
+      showToast('ok', `✅ ${short(msg.wallet)} — ${msg.score.toLocaleString('ru-RU')} pts отправлено`);
+      // обновляем лидерборд после успешного запуска
+      fetchLeaderboard();
+      setLaunchIdle();
+      closeModal();
+    }
+    if (msg.type === 'run_error') {
+      showToast('error', `❌ ${short(msg.wallet)}: ${msg.error}`);
+      setLaunchIdle();
+      closeModal();
+    }
+  };
+}
+
+// ─── render ────────────────────────────────────────────────────────────────
+const mainEl = document.getElementById('main');
+
+function render() {
+  positionTabPill();
+  document.getElementById('wallet-count-pill').textContent = state.wallets.length;
+  if (state.tab === 'leaderboard') mainEl.innerHTML = renderLeaderboard();
+  if (state.tab === 'wallets')     mainEl.innerHTML = renderWallets();
+  bindMainEvents();
+}
+
+// ─── tabs ──────────────────────────────────────────────────────────────────
+const tabBtns = [...document.querySelectorAll('.tab-btn')];
+const tabPill  = document.getElementById('tab-pill');
+tabBtns.forEach(b => b.addEventListener('click', () => { state.tab = b.dataset.tab; render(); }));
+
+function positionTabPill() {
+  tabBtns.forEach(b => {
+    const on = b.dataset.tab === state.tab;
+    b.classList.toggle('text-ink-100', on);
+    b.classList.toggle('text-ink-400', !on);
+  });
+  const active = tabBtns.find(b => b.dataset.tab === state.tab);
+  if (active) {
+    tabPill.style.width     = active.offsetWidth + 'px';
+    tabPill.style.transform = `translateX(${active.offsetLeft - 4}px)`;
+  }
+}
+
+// ─── LEADERBOARD ───────────────────────────────────────────────────────────
+function renderLeaderboard() {
+  const myAddrs = new Set(state.wallets.map(w => w.wallet.toLowerCase()));
+
+  if (!state.leaderboard.length) {
+    return `
+    <section class="tabpanel">
+      <div class="flex items-end justify-between mb-6">
+        <div>
+          <div class="text-[11px] uppercase tracking-widest text-pizza-crust font-semibold">Live ranking</div>
+          <h1 class="text-3xl font-bold mt-1 tracking-tight">Лидерборд</h1>
+        </div>
+        <button id="refresh-btn" class="btn-ghost px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2">
+          <svg id="refresh-icon" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M12 2v3.5H8.5M2 12V8.5h3.5M11.3 5.5A4.5 4.5 0 0 0 3 6.6M2.7 8.5A4.5 4.5 0 0 0 11 7.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Загрузить
+        </button>
+      </div>
+      <div class="bg-ink-900/40 border border-ink-800 border-dashed rounded-2xl p-12 text-center">
+        <div class="text-5xl mb-3">📊</div>
+        <h3 class="font-semibold text-lg">Лидерборд не загружен</h3>
+        <p class="text-ink-400 text-sm mt-1">Добавь кошелёк и нажми «Загрузить»</p>
+      </div>
+    </section>`;
+  }
+
+  const myCount = state.leaderboard.filter(r => myAddrs.has((r.address || '').toLowerCase())).length;
+  return `
+  <section class="tabpanel">
+    <div class="flex items-end justify-between mb-6">
+      <div>
+        <div class="text-[11px] uppercase tracking-widest text-pizza-crust font-semibold">Live ranking</div>
+        <h1 class="text-3xl font-bold mt-1 tracking-tight">Лидерборд</h1>
+        <p class="text-ink-400 text-sm mt-1">Top 50 · твоих в таблице: <span class="text-ink-100 font-semibold">${myCount}</span></p>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="text-right">
+          <div class="text-[11px] uppercase tracking-wider text-ink-500 font-semibold">Обновлено</div>
+          <div class="text-sm text-ink-200 font-mono mt-0.5">${state.lastUpdate ? timeAgo(state.lastUpdate) : '—'}</div>
+        </div>
+        <button id="refresh-btn" class="btn-ghost px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2">
+          <svg id="refresh-icon" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M12 2v3.5H8.5M2 12V8.5h3.5M11.3 5.5A4.5 4.5 0 0 0 3 6.6M2.7 8.5A4.5 4.5 0 0 0 11 7.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Обновить
+        </button>
+      </div>
+    </div>
+
+    <div class="bg-ink-900/60 border border-ink-800 rounded-2xl overflow-hidden">
+      <div class="grid grid-cols-[68px_1fr_180px_180px] px-6 py-3 text-[11px] uppercase tracking-wider text-ink-500 font-semibold border-b border-ink-800 bg-ink-900/40">
+        <div>#</div><div>Адрес</div><div class="text-right">Score</div><div></div>
+      </div>
+      <div class="max-h-[640px] overflow-y-auto">
+        ${state.leaderboard.map((r, i) => {
+          const addr = r.address || '';
+          const mine = myAddrs.has(addr.toLowerCase());
+          const score = r.best_score ?? 0;
+          const medal = i < 3
+            ? `<span class="text-base">${['🥇','🥈','🥉'][i]}</span>`
+            : `<span class="text-ink-500 font-mono tnum">${String(i+1).padStart(2,'0')}</span>`;
+          return `
+          <div class="row grid grid-cols-[68px_1fr_180px_180px] items-center px-6 py-3 border-b border-ink-800/60 last:border-0 ${mine ? 'row-self' : ''}">
+            <div>${medal}</div>
+            <div class="flex items-center gap-3">
+              <div class="w-7 h-7 rounded-md ${mine ? 'bg-pizza-ember/15 border border-pizza-ember/30' : 'bg-ink-800 border border-ink-700'} grid place-items-center text-[10px] font-bold ${mine ? 'text-pizza-crust' : 'text-ink-400'}">${addr.slice(2,4).toUpperCase() || '??'}</div>
+              <div>
+                <div class="font-mono text-sm">${addr ? short(addr) : '—'}</div>
+                ${mine ? `<div class="text-[10px] uppercase tracking-wider text-pizza-crust font-semibold mt-0.5">мой кошелёк</div>` : ''}
+              </div>
+            </div>
+            <div class="text-right font-mono tnum text-base font-semibold">${score.toLocaleString('ru-RU')}</div>
+            <div class="flex justify-end">
+              <button data-action="place-higher" data-rank="${i}" data-score="${score}" data-addr="${addr}"
+                class="btn-ghost px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-1.5 hover:!border-pizza-ember/50 hover:!text-pizza-crust">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 1.5L5 8.5M5 1.5L2 4.5M5 1.5L8 4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Выше
+              </button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  </section>`;
+}
+
+// ─── WALLETS ───────────────────────────────────────────────────────────────
+function renderWallets() {
+  const rankByAddr = {};
+  state.leaderboard.forEach((r, i) => {
+    if (r.address) rankByAddr[r.address.toLowerCase()] = { rank: i+1, score: r.best_score ?? 0 };
+  });
+
+  return `
+  <section class="tabpanel">
+    <div class="flex items-end justify-between mb-6">
+      <div>
+        <div class="text-[11px] uppercase tracking-widest text-pizza-crust font-semibold">Wallets</div>
+        <h1 class="text-3xl font-bold mt-1 tracking-tight">Кошельки</h1>
+        <p class="text-ink-400 text-sm mt-1">${state.wallets.length} подключено</p>
+      </div>
+    </div>
+
+    ${state.wallets.length === 0 ? `
+      <div class="bg-ink-900/40 border border-ink-800 border-dashed rounded-2xl p-12 text-center mb-6">
+        <div class="text-5xl mb-3">👛</div>
+        <h3 class="font-semibold text-lg">Пока нет кошельков</h3>
+        <p class="text-ink-400 text-sm mt-1 max-w-sm mx-auto">Добавь первый кошелёк ниже.</p>
+      </div>
+    ` : `
+      <div class="bg-ink-900/60 border border-ink-800 rounded-2xl overflow-hidden mb-6">
+        <div class="grid grid-cols-[1fr_140px_160px_220px] px-6 py-3 text-[11px] uppercase tracking-wider text-ink-500 font-semibold border-b border-ink-800 bg-ink-900/40">
+          <div>Адрес</div><div class="text-right">Место</div><div class="text-right">Score</div><div></div>
+        </div>
+        ${state.wallets.map(w => {
+          const info = rankByAddr[w.wallet.toLowerCase()];
+          return `
+          <div class="row grid grid-cols-[1fr_140px_160px_220px] items-center px-6 py-4 border-b border-ink-800/60 last:border-0">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-pizza-ember/15 border border-pizza-ember/30 grid place-items-center text-[11px] font-bold text-pizza-crust">${w.wallet.slice(2,4).toUpperCase()}</div>
+              <div>
+                <div class="font-mono text-sm">${short(w.wallet)}</div>
+                <div class="text-[11px] text-ink-500 font-mono mt-0.5">${w.wallet.slice(0,20)}…</div>
+              </div>
+            </div>
+            <div class="text-right">
+              ${info ? `<div class="font-mono tnum text-base font-semibold">#${info.rank}</div>` : `<div class="text-ink-500 text-sm">—</div>`}
+            </div>
+            <div class="text-right">
+              ${info ? `<div class="font-mono tnum text-base font-semibold">${info.score.toLocaleString('ru-RU')}</div>` : `<div class="text-ink-500 text-sm">вне топа</div>`}
+            </div>
+            <div class="flex justify-end gap-2">
+              <button data-action="wallet-launch" data-addr="${w.wallet}" data-score="${info?.score ?? 0}"
+                class="btn-primary px-4 py-2 rounded-lg text-xs flex items-center gap-1.5">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 1.5v7l6.5-3.5L2 1.5Z" fill="currentColor"/></svg>
+                Запустить
+              </button>
+              <button data-action="wallet-delete" data-addr="${w.wallet}"
+                class="btn-danger-ghost px-3 py-2 rounded-lg text-xs" aria-label="Удалить">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 3.5h7M5 5.5v3M7 5.5v3M3.5 3.5l.5 6a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1l.5-6M4.5 3.5V2.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v1" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    `}
+
+    <div class="bg-ink-900/40 border border-ink-800 border-dashed rounded-2xl p-5">
+      <div class="flex items-center justify-between mb-3">
+        <div class="text-[11px] uppercase tracking-wider text-ink-500 font-semibold">Добавить кошелёк</div>
+        <button id="bulk-import-btn" class="btn-ghost px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 9h8M6 1v6M3.5 4.5L6 7l2.5-2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Импортировать список
+        </button>
+      </div>
+      <form id="add-wallet-form" class="flex gap-2">
+        <input id="add-wallet-input" placeholder="0x…" class="input flex-1 px-4 py-3 font-mono text-sm" autocomplete="off" />
+        <button type="submit" class="btn-primary px-5 py-3 rounded-lg text-sm flex items-center gap-2">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Добавить
+        </button>
+      </form>
+      <div id="add-wallet-error" class="text-xs text-red-400 mt-2 hidden font-mono"></div>
+    </div>
+  </section>`;
+}
+
+// ─── events ────────────────────────────────────────────────────────────────
+function bindMainEvents() {
+  // place higher
+  mainEl.querySelectorAll('[data-action="place-higher"]').forEach(b => b.addEventListener('click', () => {
+    const score = parseInt(b.dataset.score) + 300;
+    const rowAddr = b.dataset.addr || '';
+    const isMine = state.wallets.some(w => w.wallet.toLowerCase() === rowAddr.toLowerCase());
+    openModal({
+      presetAddrs: isMine ? [rowAddr] : state.wallets.map(w => w.wallet),
+      presetScore: score,
+      highlightAddr: isMine ? rowAddr : null,
+    });
+  }));
+
+  // wallet launch
+  mainEl.querySelectorAll('[data-action="wallet-launch"]').forEach(b => b.addEventListener('click', () => {
+    const score = parseInt(b.dataset.score) + 300;
+    openModal({ presetAddrs: [b.dataset.addr], presetScore: score });
+  }));
+
+  // wallet delete
+  mainEl.querySelectorAll('[data-action="wallet-delete"]').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm('Удалить кошелёк?')) return;
+    try {
+      await apiFetch(`/api/wallets/${b.dataset.addr}`, { method: 'DELETE' });
+      await fetchWallets();
+    } catch (e) {
+      showToast('error', '❌ ' + e.message);
+    }
+  }));
+
+  // refresh
+  const refreshBtn = document.getElementById('refresh-btn');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', async () => {
+      const icon = document.getElementById('refresh-icon');
+      refreshBtn.disabled = true;
+      icon.classList.add('animate-spin');
+      await fetchLeaderboard();
+      icon.classList.remove('animate-spin');
+      refreshBtn.disabled = false;
+    });
+  }
+
+  // bulk import button
+  const bulkBtn = document.getElementById('bulk-import-btn');
+  if (bulkBtn) bulkBtn.addEventListener('click', openBulkModal);
+
+  // add wallet form
+  const form = document.getElementById('add-wallet-form');
+  if (form) {
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const input = document.getElementById('add-wallet-input');
+      const errEl = document.getElementById('add-wallet-error');
+      errEl.classList.add('hidden');
+      try {
+        await apiFetch('/api/wallets', { method: 'POST', body: JSON.stringify({ wallet: input.value.trim() }) });
+        input.value = '';
+        await fetchWallets();
+      } catch (err) {
+        errEl.textContent = err.message;
+        errEl.classList.remove('hidden');
+      }
+    });
+  }
+}
+
+// ─── modal ─────────────────────────────────────────────────────────────────
+const modal   = document.getElementById('modal');
+const scoreEl = document.getElementById('modal-score');
+const walletsEl = document.getElementById('modal-wallets');
+
+function openModal({ presetAddrs = [], presetScore = 0, highlightAddr = null } = {}) {
+  state.selectedAddrs = [...presetAddrs];
+  scoreEl.value = presetScore || '';
+  renderModalWallets(presetAddrs, highlightAddr);
+  setLaunchIdle();
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  setTimeout(() => scoreEl.focus(), 50);
+}
+
+function closeModal() {
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+function renderModalWallets(selected, highlightAddr = null) {
+  const sel = new Set(selected.map(a => a.toLowerCase()));
+  const hl  = highlightAddr ? highlightAddr.toLowerCase() : null;
+
+  if (!state.wallets.length) {
+    walletsEl.innerHTML = `<div class="text-sm text-ink-400 font-mono p-3 border border-dashed border-ink-700 rounded-lg">Нет добавленных кошельков</div>`;
+    return;
+  }
+  if (state.wallets.length === 1) {
+    const w = state.wallets[0];
+    state.selectedAddrs = [w.wallet];
+    const isHl = hl && w.wallet.toLowerCase() === hl;
+    walletsEl.innerHTML = `
+      <div class="flex items-center gap-3 p-3 rounded-lg border ${isHl ? 'bg-pizza-ember/10 border-pizza-ember/40' : 'bg-ink-850 border-ink-700'}">
+        <div class="w-7 h-7 rounded-md bg-pizza-ember/15 border border-pizza-ember/30 grid place-items-center text-[10px] font-bold text-pizza-crust">${w.wallet.slice(2,4).toUpperCase()}</div>
+        <span class="font-mono text-sm flex-1">${short(w.wallet)}</span>
+        ${isHl ? `<span class="text-[10px] font-semibold uppercase tracking-wider text-pizza-crust">этот кошелёк</span>` : ''}
+      </div>`;
+    return;
+  }
+  walletsEl.innerHTML = state.wallets.map(w => {
+    const isHl = hl && w.wallet.toLowerCase() === hl;
+    const checked = sel.has(w.wallet.toLowerCase());
+    return `
+    <label class="flex items-center gap-3 p-2.5 rounded-lg cursor-pointer border transition-colors
+      ${isHl ? 'bg-pizza-ember/10 border-pizza-ember/40' : 'border-transparent hover:bg-ink-850 has-[:checked]:bg-ink-850 has-[:checked]:border-pizza-ember/30'}">
+      <input type="checkbox" class="chk modal-chk" data-addr="${w.wallet}" ${checked ? 'checked' : ''} />
+      <div class="w-7 h-7 rounded-md bg-pizza-ember/15 border border-pizza-ember/30 grid place-items-center text-[10px] font-bold text-pizza-crust">${w.wallet.slice(2,4).toUpperCase()}</div>
+      <span class="font-mono text-sm flex-1">${short(w.wallet)}</span>
+      ${isHl ? `<span class="text-[10px] font-semibold uppercase tracking-wider text-pizza-crust">в лидерборде</span>` : ''}
+    </label>`;
+  }).join('');
+  walletsEl.querySelectorAll('.modal-chk').forEach(c => c.addEventListener('change', () => {
+    state.selectedAddrs = [...walletsEl.querySelectorAll('.modal-chk:checked')].map(x => x.dataset.addr);
+  }));
+}
+
+function setLaunchIdle() {
+  const btn = document.getElementById('modal-launch');
+  btn.disabled = false;
+  document.getElementById('modal-launch-text').textContent = 'Запустить';
+  document.getElementById('modal-spinner').classList.add('hidden');
+}
+function setLaunchLoading() {
+  const btn = document.getElementById('modal-launch');
+  btn.disabled = true;
+  document.getElementById('modal-launch-text').textContent = 'Запускаем…';
+  document.getElementById('modal-spinner').classList.remove('hidden');
+}
+
+document.getElementById('modal-close').addEventListener('click', closeModal);
+document.getElementById('modal-cancel').addEventListener('click', closeModal);
+modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+document.getElementById('modal-launch').addEventListener('click', async () => {
+  const score = parseInt(scoreEl.value, 10) || 0;
+  if (score <= 0) { showToast('error', 'Введи score > 0'); return; }
+  if (!state.selectedAddrs.length) { showToast('error', 'Выбери хотя бы один кошелёк'); return; }
+
+  setLaunchLoading();
+  try {
+    await apiFetch('/api/run', {
+      method: 'POST',
+      body: JSON.stringify({ wallets: state.selectedAddrs, score }),
+    });
+    // ответ придёт через WebSocket
+  } catch (e) {
+    showToast('error', '❌ ' + e.message);
+    setLaunchIdle();
+    closeModal();
+  }
+});
+
+// ─── bulk import ───────────────────────────────────────────────────────────
+const bulkModal    = document.getElementById('bulk-modal');
+const bulkTextarea = document.getElementById('bulk-textarea');
+const bulkCount    = document.getElementById('bulk-count');
+
+function openBulkModal() {
+  bulkTextarea.value = '';
+  bulkCount.textContent = '';
+  bulkModal.classList.remove('hidden');
+  bulkModal.classList.add('flex');
+  setTimeout(() => bulkTextarea.focus(), 50);
+}
+function closeBulkModal() {
+  bulkModal.classList.add('hidden');
+  bulkModal.classList.remove('flex');
+}
+
+function parseBulkAddresses(raw) {
+  return raw.split('\n')
+    .map(l => l.trim())
+    .filter(l => /^0x[a-fA-F0-9]{40}$/.test(l));
+}
+
+bulkTextarea.addEventListener('input', () => {
+  const addrs = parseBulkAddresses(bulkTextarea.value);
+  bulkCount.textContent = addrs.length > 0 ? `найдено валидных: ${addrs.length}` : '';
+});
+
+document.getElementById('bulk-modal-close').addEventListener('click', closeBulkModal);
+document.getElementById('bulk-modal-cancel').addEventListener('click', closeBulkModal);
+bulkModal.addEventListener('click', e => { if (e.target === bulkModal) closeBulkModal(); });
+
+document.getElementById('bulk-modal-import').addEventListener('click', async () => {
+  const addrs = parseBulkAddresses(bulkTextarea.value);
+  if (!addrs.length) { showToast('error', 'Нет валидных адресов'); return; }
+
+  const btn = document.getElementById('bulk-modal-import');
+  btn.disabled = true;
+  document.getElementById('bulk-import-text').textContent = 'Импортируем…';
+  document.getElementById('bulk-spinner').classList.remove('hidden');
+
+  try {
+    const res = await apiFetch('/api/import', {
+      method: 'POST',
+      body: JSON.stringify({ wallets: addrs }),
+    });
+    closeBulkModal();
+    showToast('ok', `✅ Добавлено: ${res.added} · уже было: ${res.skipped}${res.invalid ? ' · невалидных: ' + res.invalid : ''}`);
+    await fetchWallets();
+  } catch (e) {
+    showToast('error', '❌ ' + e.message);
+  } finally {
+    btn.disabled = false;
+    document.getElementById('bulk-import-text').textContent = 'Импортировать';
+    document.getElementById('bulk-spinner').classList.add('hidden');
+  }
+});
+
+// ─── toasts ────────────────────────────────────────────────────────────────
+const toastsEl = document.getElementById('toasts');
+function showToast(type, text, ms = 5000) {
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.textContent = text;
+  toastsEl.appendChild(t);
+  setTimeout(() => {
+    t.style.transition = 'opacity .4s ease';
+    t.style.opacity = '0';
+    setTimeout(() => t.remove(), 400);
+  }, ms);
+}
+
+// ─── boot ──────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  setTimeout(render, 50);
+  fetchWallets();
+  fetchLeaderboard();
+  connectWS();
+});
+window.addEventListener('resize', positionTabPill);
+</script>
+</body>
+</html>

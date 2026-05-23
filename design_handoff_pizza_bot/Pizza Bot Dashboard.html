@@ -1,0 +1,1663 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<title>Pizza Bot — La Cucina</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper:        #ede2c9;
+    --paper-2:      #e6d8b6;
+    --paper-deep:   #d9c694;
+    --paper-bright: #faf1d8;
+    --ink:          #1b110a;
+    --ink-2:        #3a2a17;
+    --ink-3:        #6e5832;
+    --ink-soft:     #8e7549;
+    --rule:         #b39361;
+    --rule-soft:    #c8ad7c;
+    --terra:        #b54023;
+    --terra-deep:   #7d2611;
+    --wine:         #8a1c2e;
+    --olive:        #5e6b2c;
+    --basil:        #3f5a1d;
+    --char:         #2a1a0e;
+    --stamp:        #93250d;
+    --shadow:       0 1px 0 rgba(28,18,10,.06), 0 12px 24px -16px rgba(28,18,10,.25);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background-color: var(--paper);
+    background-image:
+      radial-gradient(60% 70% at 12% -10%, rgba(181,64,35,.07), transparent 60%),
+      radial-gradient(40% 50% at 95% 105%, rgba(94,107,44,.06), transparent 60%),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.106  0 0 0 0 0.067  0 0 0 0 0.039  0 0 0 0.07 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    color: var(--ink);
+    font-family: 'Newsreader', 'Iowan Old Style', Georgia, serif;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 1.5;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--terra); color: var(--paper-bright); }
+
+  .serif { font-family: 'Newsreader', serif; }
+  .display { font-family: 'Instrument Serif', 'Newsreader', serif; font-weight: 400; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 500; }
+  .it { font-style: italic; }
+  .small-caps { font-variant: all-small-caps; letter-spacing: .12em; }
+  .tnum { font-variant-numeric: tabular-nums; }
+
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; cursor: pointer; }
+
+  /* ============= MASTHEAD ============= */
+  .masthead {
+    border-bottom: 1px solid var(--ink);
+    padding: 12px 0 0;
+    background:
+      linear-gradient(to bottom, rgba(217,198,148,.35), transparent 40%),
+      transparent;
+  }
+  .kicker-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    font-variant: all-small-caps;
+    letter-spacing: .28em;
+    font-size: 12px;
+    color: var(--ink-2);
+    padding: 4px 36px 10px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .kicker-row .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--ink-2); }
+
+  .masthead-inner {
+    max-width: 1280px; margin: 0 auto;
+    padding: 18px 36px 14px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: end;
+    gap: 24px;
+  }
+  .masthead-left, .masthead-right {
+    font-variant: all-small-caps;
+    letter-spacing: .18em;
+    font-size: 12px;
+    color: var(--ink-2);
+    line-height: 1.6;
+  }
+  .masthead-left { text-align: left; }
+  .masthead-right { text-align: right; }
+
+  .wordmark {
+    text-align: center;
+    line-height: .9;
+  }
+  .wordmark .name {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 64px;
+    letter-spacing: -.01em;
+    color: var(--ink);
+    display: inline-block;
+  }
+  .wordmark .name .amp {
+    font-family: 'Instrument Serif', serif;
+    color: var(--terra);
+    margin: 0 4px;
+  }
+  .wordmark .tag {
+    margin-top: 8px;
+    font-variant: all-small-caps;
+    letter-spacing: .32em;
+    font-size: 11px;
+    color: var(--ink-3);
+  }
+  .wordmark .ornament {
+    display: inline-block;
+    color: var(--rule);
+    margin: 0 8px;
+    vertical-align: middle;
+  }
+
+  /* status stamp */
+  .aperto-stamp {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 78px; height: 78px;
+    border: 2px solid var(--terra-deep);
+    border-radius: 50%;
+    color: var(--terra-deep);
+    font-variant: all-small-caps;
+    letter-spacing: .18em;
+    font-size: 11px;
+    font-weight: 600;
+    transform: rotate(-7deg);
+    text-align: center;
+    line-height: 1.1;
+    flex-direction: column;
+    opacity: .8;
+    box-shadow: inset 0 0 0 1px rgba(125,38,17,.18);
+  }
+  .aperto-stamp .big { font-size: 16px; letter-spacing: .12em; margin-top: 2px; }
+
+  /* ============= TABS BAR ============= */
+  .tabs-bar {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 16px 36px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 3px double var(--ink);
+  }
+  .tabs {
+    display: flex;
+    gap: 28px;
+  }
+  .tab {
+    border: 0;
+    background: transparent;
+    padding: 6px 0;
+    font-family: 'Instrument Serif', serif;
+    font-size: 26px;
+    color: var(--ink-3);
+    transition: color .2s ease;
+    position: relative;
+    line-height: 1;
+    white-space: nowrap;
+    flex-shrink: 0;
+    flex-grow: 0;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    width: auto;
+  }
+  .tab .it-title { display: block; }
+  .tab .ru { display: block; font-size: 13px; font-family: 'Newsreader', serif; font-variant: all-small-caps; letter-spacing: .22em; color: var(--ink-soft); transition: color .2s ease; }
+  .tab.active { color: var(--ink); font-style: italic; }
+  .tab.active .ru { color: var(--ink-2); }
+  .tab.active::after {
+    content: '';
+    position: absolute;
+    left: -6px; right: -6px; bottom: -7px;
+    height: 4px;
+    background: var(--terra);
+  }
+  .tab:hover { color: var(--ink-2); }
+
+  .tabs-meta {
+    font-variant: all-small-caps;
+    letter-spacing: .2em;
+    font-size: 11px;
+    color: var(--ink-3);
+    text-align: right;
+    line-height: 1.5;
+  }
+  .tabs-meta .who { color: var(--ink); font-weight: 500; font-variant: normal; letter-spacing: 0; font-family: 'JetBrains Mono', monospace; font-size: 12px; margin-top: 2px; }
+
+  /* ============= MAIN ============= */
+  .stage {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 40px 36px 80px;
+  }
+
+  /* ============= PAGE HEADER (per tab) ============= */
+  .page-head {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    gap: 28px;
+    margin-bottom: 30px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .page-head .kicker {
+    font-variant: all-small-caps;
+    letter-spacing: .28em;
+    font-size: 12px;
+    color: var(--terra-deep);
+    margin-bottom: 6px;
+  }
+  .page-head h1 {
+    font-family: 'Instrument Serif', serif;
+    font-weight: 400;
+    font-style: italic;
+    font-size: 88px;
+    line-height: .92;
+    margin: 0;
+    color: var(--ink);
+    letter-spacing: -.015em;
+  }
+  .page-head h1 .roman {
+    font-style: normal;
+    color: var(--terra);
+    margin-left: 12px;
+    font-size: 56px;
+    vertical-align: 8px;
+  }
+  .page-head .lede {
+    font-size: 17px;
+    color: var(--ink-2);
+    font-style: italic;
+    margin-top: 10px;
+    max-width: 520px;
+  }
+  .page-head-aside {
+    text-align: right;
+    font-size: 13px;
+    color: var(--ink-3);
+    line-height: 1.5;
+  }
+  .page-head-aside .label { font-variant: all-small-caps; letter-spacing: .2em; font-size: 11px; color: var(--ink-soft); }
+  .page-head-aside .value { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--ink); margin-top: 2px; }
+
+  /* ============= GENERAL BUTTONS ============= */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    border: 1px solid var(--ink);
+    background: transparent;
+    color: var(--ink);
+    padding: 8px 14px;
+    font-family: 'Newsreader', serif;
+    font-size: 14px;
+    font-variant: all-small-caps;
+    letter-spacing: .18em;
+    transition: background .15s ease, color .15s ease, transform .1s ease, box-shadow .15s ease;
+  }
+  .btn:hover { background: var(--ink); color: var(--paper-bright); }
+  .btn:active { transform: translateY(1px); }
+
+  .btn-fill {
+    border-color: var(--terra-deep);
+    background: var(--terra);
+    color: var(--paper-bright);
+    box-shadow: 0 1px 0 rgba(255,255,255,.18) inset, 0 8px 20px -10px rgba(125,38,17,.6);
+  }
+  .btn-fill:hover { background: var(--terra-deep); color: var(--paper-bright); }
+
+  .btn-ghost {
+    border: 1px solid var(--rule);
+    color: var(--ink-2);
+    background: transparent;
+  }
+  .btn-ghost:hover { background: var(--ink); color: var(--paper-bright); border-color: var(--ink); }
+
+  .btn-text {
+    border: 0;
+    background: transparent;
+    padding: 4px 0;
+    color: var(--ink-2);
+    font-style: italic;
+    font-size: 14px;
+    letter-spacing: 0;
+    text-transform: none;
+    border-bottom: 1px solid var(--rule);
+    transition: color .15s ease, border-color .15s ease;
+  }
+  .btn-text:hover { color: var(--terra-deep); border-color: var(--terra-deep); background: transparent; }
+
+  .btn-icon {
+    width: 32px; height: 32px;
+    padding: 0; justify-content: center;
+    border-color: var(--rule); color: var(--ink-2);
+    background: transparent;
+  }
+  .btn-icon:hover { background: var(--ink); color: var(--paper-bright); border-color: var(--ink); }
+
+  /* ============= LEADERBOARD ============= */
+  .menu-list {
+    list-style: none; padding: 0; margin: 0;
+  }
+  .menu-row {
+    display: grid;
+    grid-template-columns: 64px 1fr auto;
+    align-items: baseline;
+    gap: 16px;
+    padding: 14px 14px;
+    border-bottom: 1px solid var(--rule-soft);
+    position: relative;
+    transition: background .15s ease;
+  }
+  .menu-row:hover { background: rgba(217,198,148,.35); }
+  .menu-row:hover .menu-action { opacity: 1; transform: translateX(0); }
+  .menu-row .rank {
+    font-family: 'Instrument Serif', serif;
+    font-size: 38px;
+    line-height: 1;
+    color: var(--ink-3);
+    text-align: right;
+    font-feature-settings: "lnum";
+    font-variant-numeric: lining-nums tabular-nums;
+  }
+  .menu-row .rank-top {
+    color: var(--terra);
+    font-style: italic;
+  }
+  .menu-row .mid {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    min-width: 0;
+  }
+  .menu-row .who {
+    font-family: 'Instrument Serif', serif;
+    font-size: 26px;
+    line-height: 1;
+    color: var(--ink);
+    flex-shrink: 0;
+    font-style: italic;
+  }
+  .menu-row .addr {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-3);
+    letter-spacing: .02em;
+  }
+  .menu-row .dots {
+    flex: 1;
+    height: 1em;
+    border-bottom: 2px dotted var(--ink-soft);
+    transform: translateY(-4px);
+    margin: 0 8px;
+    opacity: .55;
+  }
+  .menu-row .score {
+    font-family: 'Instrument Serif', serif;
+    font-size: 34px;
+    line-height: 1;
+    color: var(--ink);
+    font-feature-settings: "lnum";
+    font-variant-numeric: lining-nums tabular-nums;
+    text-align: right;
+    min-width: 120px;
+  }
+  .menu-row .right {
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+    flex-shrink: 0;
+  }
+  .menu-action {
+    opacity: 0;
+    transform: translateX(-6px);
+    transition: opacity .18s ease, transform .18s ease;
+  }
+  .menu-row.is-mine {
+    background:
+      linear-gradient(90deg, rgba(181,64,35,.10) 0%, rgba(181,64,35,.02) 30%, transparent 70%);
+  }
+  .menu-row.is-mine::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 8px; bottom: 8px;
+    width: 4px;
+    background: var(--terra);
+  }
+  .menu-row.is-mine .who { color: var(--terra-deep); }
+  .menu-row .mine-stamp {
+    display: inline-block;
+    transform: rotate(-3deg);
+    border: 1px solid var(--stamp);
+    color: var(--stamp);
+    font-variant: all-small-caps;
+    letter-spacing: .2em;
+    font-size: 10px;
+    padding: 2px 8px;
+    margin-left: 10px;
+    line-height: 1;
+    align-self: center;
+  }
+  .menu-row .pos-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-soft);
+    letter-spacing: .1em;
+  }
+
+  /* ============= WALLETS — receipts grid ============= */
+  .wallet-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 22px;
+  }
+  .wallet-card {
+    background: var(--paper-bright);
+    border: 1px solid var(--rule);
+    padding: 22px 24px 18px;
+    position: relative;
+    box-shadow: var(--shadow);
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+  .wallet-card:hover { transform: translateY(-2px); box-shadow: 0 2px 0 rgba(28,18,10,.08), 0 20px 30px -18px rgba(28,18,10,.4); }
+  .wallet-card::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: 24px; right: 24px;
+    height: 1px;
+    background: repeating-linear-gradient(90deg, var(--ink) 0 4px, transparent 4px 8px);
+    opacity: .45;
+  }
+  .wallet-card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 14px;
+  }
+  .wallet-card .num {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--ink-3);
+    font-variant: all-small-caps;
+    letter-spacing: .22em;
+  }
+  .wallet-card .who-line {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 32px;
+    line-height: 1;
+    color: var(--ink);
+    margin-top: 6px;
+  }
+  .wallet-card .addr-full {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-3);
+    letter-spacing: .02em;
+    margin-top: 6px;
+    word-break: break-all;
+    line-height: 1.5;
+  }
+  .wallet-card .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--rule);
+  }
+  .wallet-card .stat .l {
+    font-variant: all-small-caps;
+    letter-spacing: .2em;
+    font-size: 10px;
+    color: var(--ink-soft);
+  }
+  .wallet-card .stat .v {
+    font-family: 'Instrument Serif', serif;
+    font-size: 32px;
+    line-height: 1.1;
+    color: var(--ink);
+  }
+  .wallet-card .stat .v small { font-size: 13px; color: var(--ink-3); font-family: 'Newsreader', serif; font-style: italic; }
+  .wallet-card .actions {
+    margin-top: 18px;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    justify-content: flex-end;
+  }
+  .wallet-card .warn {
+    position: absolute;
+    top: 18px; right: 18px;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    border: 1px solid var(--terra);
+    color: var(--terra);
+    display: grid; place-items: center;
+    background: rgba(181,64,35,.06);
+    cursor: help;
+  }
+  .wallet-card .warn .tip-body {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: -8px;
+    background: var(--ink);
+    color: var(--paper-bright);
+    padding: 8px 12px;
+    font-size: 12px;
+    font-style: italic;
+    line-height: 1.4;
+    width: 240px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .15s ease;
+    z-index: 20;
+  }
+  .wallet-card .warn:hover .tip-body { opacity: 1; }
+  .wallet-card .warn .tip-body::before {
+    content: ''; position: absolute; top: -5px; right: 12px;
+    border: 5px solid transparent; border-bottom-color: var(--ink); border-top: 0;
+  }
+
+  /* Add wallet form */
+  .add-wallet {
+    margin-top: 36px;
+    border: 1px dashed var(--ink);
+    padding: 22px 24px;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+  .add-wallet .label {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 22px;
+    color: var(--ink);
+    flex-shrink: 0;
+  }
+  .add-wallet .label small { display: block; font-size: 11px; font-style: normal; font-variant: all-small-caps; letter-spacing: .2em; color: var(--ink-soft); margin-top: 2px; }
+  .add-wallet form { display: flex; flex: 1; gap: 10px; align-items: center; }
+  .add-wallet input { flex: 1; }
+  .add-wallet .err { color: var(--terra-deep); font-style: italic; font-size: 13px; margin-top: 8px; }
+
+  .input {
+    background: var(--paper-bright);
+    border: 1px solid var(--rule);
+    color: var(--ink);
+    padding: 10px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    width: 100%;
+    transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
+  }
+  .input:focus {
+    outline: 0;
+    border-color: var(--ink);
+    background: #fff8e6;
+    box-shadow: 0 0 0 3px rgba(181,64,35,.12);
+  }
+  .input::placeholder { color: var(--ink-soft); font-style: italic; }
+
+  /* ============= SESSIONS — kitchen tickets ============= */
+  .ticket-rail {
+    position: relative;
+    padding-top: 36px;
+    margin-bottom: 36px;
+  }
+  .ticket-rail::before {
+    /* the string */
+    content: '';
+    position: absolute;
+    top: 16px; left: 24px; right: 24px;
+    height: 2px;
+    background:
+      radial-gradient(circle at 1px 1px, var(--ink) 1px, transparent 1.2px) 0 0/12px 2px repeat-x;
+    opacity: .5;
+  }
+  .ticket-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px 26px;
+  }
+
+  .ticket {
+    background:
+      linear-gradient(to bottom, var(--paper-bright), #fdf6df 30%, var(--paper-bright));
+    border: 1px solid var(--ink-3);
+    padding: 22px 24px 20px;
+    position: relative;
+    box-shadow:
+      0 1px 0 rgba(28,18,10,.06),
+      0 16px 30px -22px rgba(28,18,10,.55);
+    animation: ticketIn .45s cubic-bezier(.2,.7,.2,1) both;
+  }
+  .ticket:nth-child(odd) { transform: rotate(-.6deg); }
+  .ticket:nth-child(even) { transform: rotate(.5deg); }
+
+  .ticket::before {
+    /* clothes pin */
+    content: '';
+    position: absolute;
+    top: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 28px; height: 16px;
+    background:
+      linear-gradient(to bottom, #cdb98c, #b39361);
+    border: 1px solid var(--ink-2);
+    border-radius: 3px 3px 1px 1px;
+    box-shadow: 0 1px 0 rgba(255,255,255,.5) inset, 0 4px 6px -4px rgba(0,0,0,.4);
+  }
+  .ticket::after {
+    /* perforation top */
+    content: '';
+    position: absolute;
+    top: 8px; left: 0; right: 0; height: 2px;
+    background: radial-gradient(circle at 4px 1px, var(--paper) 1.5px, transparent 1.8px) 0 0/8px 2px repeat-x;
+    pointer-events: none;
+  }
+
+  @keyframes ticketIn {
+    from { opacity: 0; transform: translateY(-10px) rotate(0); }
+    to   { opacity: 1; }
+  }
+
+  .ticket-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px dashed var(--rule);
+  }
+  .ticket-no {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 16px;
+    color: var(--ink-3);
+    font-variant: all-small-caps;
+    letter-spacing: .22em;
+  }
+  .ticket-who {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--ink);
+    margin-top: 4px;
+  }
+  .ticket-time {
+    font-variant: all-small-caps;
+    letter-spacing: .18em;
+    font-size: 11px;
+    color: var(--ink-soft);
+  }
+
+  /* status stamps */
+  .stamp {
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 2px solid currentColor;
+    padding: 4px 10px 3px;
+    font-variant: all-small-caps;
+    letter-spacing: .18em;
+    font-size: 11px;
+    font-weight: 600;
+    transform: rotate(-2.5deg);
+    line-height: 1;
+    background: transparent;
+    opacity: .85;
+  }
+  .stamp-pending { color: var(--ink-3); border-style: dashed; }
+  .stamp-active  { color: var(--olive); }
+  .stamp-success { color: var(--terra-deep); }
+  .stamp-error   { color: var(--wine); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+
+  .ticket-stat-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .ticket-stat .l { font-variant: all-small-caps; letter-spacing: .2em; font-size: 10px; color: var(--ink-soft); }
+  .ticket-stat .v { font-family: 'Instrument Serif', serif; font-size: 28px; line-height: 1.1; color: var(--ink); }
+  .ticket-stat .v.accent { color: var(--terra); font-style: italic; }
+
+  .progress {
+    margin: 10px 0 14px;
+  }
+  .progress-meta {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-3);
+    margin-bottom: 6px;
+  }
+  .progress-meta .pct {
+    font-family: 'Instrument Serif', serif;
+    font-size: 22px;
+    color: var(--terra);
+    font-style: italic;
+  }
+  .progress-bar {
+    height: 10px;
+    border: 1px solid var(--ink-2);
+    background: var(--paper);
+    position: relative;
+    overflow: hidden;
+  }
+  .progress-bar > i {
+    display: block;
+    height: 100%;
+    background:
+      repeating-linear-gradient(45deg, var(--terra) 0 6px, var(--terra-deep) 6px 12px);
+    transition: width .5s ease;
+  }
+
+  /* dotted segmented progress (alt for finished tickets) */
+  .dot-progress { display: flex; gap: 4px; flex-wrap: wrap; }
+  .dot-progress i { width: 8px; height: 8px; border: 1px solid var(--ink-3); display: block; }
+  .dot-progress i.f { background: var(--terra); border-color: var(--terra-deep); }
+
+  .logbox {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    padding: 8px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    line-height: 1.7;
+    color: var(--ink-2);
+  }
+  .logbox .ln { display: block; }
+  .logbox .ts { color: var(--ink-soft); margin-right: 6px; }
+  .lvl-info { color: var(--ink-2); }
+  .lvl-ok   { color: var(--basil); }
+  .lvl-warn { color: var(--terra); }
+  .lvl-err  { color: var(--wine); }
+
+  .ticket-actions {
+    margin-top: 12px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+
+  /* finished sessions list */
+  .history-section {
+    margin-top: 8px;
+  }
+  .history-head {
+    display: flex; align-items: center; gap: 16px;
+    margin-bottom: 14px;
+  }
+  .history-head h2 {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 32px;
+    margin: 0;
+    color: var(--ink);
+  }
+  .history-head .rule { flex: 1; height: 1px; background: var(--rule); }
+  .history-head .count {
+    font-variant: all-small-caps;
+    letter-spacing: .2em;
+    font-size: 11px;
+    color: var(--ink-soft);
+  }
+  .history-row {
+    display: grid;
+    grid-template-columns: 110px 1fr 130px 130px 100px;
+    align-items: baseline;
+    gap: 16px;
+    padding: 10px 14px;
+    border-bottom: 1px dotted var(--rule);
+  }
+  .history-row:hover { background: rgba(217,198,148,.4); }
+  .history-row .who-mono { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+  .history-row .score-line {
+    font-family: 'Instrument Serif', serif;
+    font-size: 22px;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .history-row .score-line small { font-size: 12px; color: var(--ink-soft); font-family: 'Newsreader', serif; font-style: italic; }
+  .history-row .right-meta {
+    font-variant: all-small-caps;
+    letter-spacing: .18em;
+    font-size: 11px;
+    color: var(--ink-soft);
+    text-align: right;
+  }
+
+  /* ============= EMPTY STATES ============= */
+  .empty {
+    text-align: center;
+    padding: 60px 24px;
+    border: 1px dashed var(--rule);
+    margin-bottom: 24px;
+  }
+  .empty .glyph {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 72px;
+    line-height: 1;
+    color: var(--terra);
+    margin-bottom: 6px;
+  }
+  .empty h3 {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 28px;
+    margin: 8px 0 4px;
+    color: var(--ink);
+    font-weight: 400;
+  }
+  .empty p { color: var(--ink-3); font-size: 14px; max-width: 360px; margin: 0 auto; font-style: italic; }
+
+  /* ============= MODAL ============= */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(20,12,4,.55);
+    backdrop-filter: blur(3px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 60;
+    padding: 24px;
+  }
+  .modal-backdrop.open { display: flex; }
+  .receipt {
+    width: 420px; max-width: 100%;
+    background:
+      linear-gradient(to bottom, var(--paper-bright), #fcf3d8);
+    border: 1px solid var(--ink-2);
+    position: relative;
+    padding: 28px 28px 22px;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,.6);
+    animation: modalIn .25s cubic-bezier(.2,.7,.2,1) both;
+  }
+  @keyframes modalIn { from { transform: translateY(8px) scale(.98); opacity: 0; } to { transform: none; opacity: 1; } }
+  /* zigzag edges */
+  .receipt::before, .receipt::after {
+    content: ''; position: absolute; left: 0; right: 0; height: 8px;
+    background:
+      linear-gradient(135deg, transparent 50%, var(--paper) 50%) 0 0/8px 8px,
+      linear-gradient(45deg, transparent 50%, var(--paper) 50%) 0 0/8px 8px;
+  }
+  .receipt::before { top: -1px; transform: scaleY(-1); }
+  .receipt::after  { bottom: -1px; }
+
+  .receipt-head { text-align: center; padding-bottom: 14px; border-bottom: 1px dashed var(--ink-2); }
+  .receipt-head .kicker { font-variant: all-small-caps; letter-spacing: .3em; font-size: 11px; color: var(--terra-deep); }
+  .receipt-head h3 {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 38px;
+    margin: 6px 0 2px;
+    font-weight: 400;
+  }
+  .receipt-head .ord { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink-3); }
+  .receipt-close {
+    position: absolute; top: 12px; right: 14px;
+    width: 26px; height: 26px;
+    background: transparent; border: 0;
+    color: var(--ink-3);
+    cursor: pointer;
+    font-size: 22px;
+    line-height: 1;
+  }
+  .receipt-close:hover { color: var(--terra-deep); }
+
+  .receipt-section { padding: 16px 0; border-bottom: 1px dashed var(--rule); }
+  .receipt-section:last-of-type { border-bottom: 0; }
+  .receipt-label {
+    font-variant: all-small-caps;
+    letter-spacing: .22em;
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin-bottom: 10px;
+  }
+  .receipt-walletopt {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--rule);
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .receipt-walletopt:hover { background: rgba(217,198,148,.4); }
+  .receipt-walletopt.checked { border-color: var(--terra); background: rgba(181,64,35,.08); }
+  .receipt-walletopt input { display: none; }
+  .receipt-walletopt .chkbox {
+    width: 18px; height: 18px; border: 1.5px solid var(--ink-3);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .receipt-walletopt.checked .chkbox { border-color: var(--terra); background: var(--terra); color: var(--paper-bright); }
+  .receipt-walletopt.checked .chkbox::after {
+    content: '✓'; font-size: 12px; line-height: 1; font-weight: 700;
+  }
+  .receipt-walletopt .name { font-family: 'JetBrains Mono', monospace; font-size: 13px; flex: 1; }
+  .receipt-walletopt .tag { font-variant: all-small-caps; letter-spacing: .18em; font-size: 10px; color: var(--wine); }
+
+  .receipt-score-input {
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid var(--ink);
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 48px;
+    color: var(--ink);
+    width: 100%;
+    padding: 4px 0;
+    text-align: center;
+    font-variant-numeric: lining-nums tabular-nums;
+  }
+  .receipt-score-input:focus { outline: 0; border-bottom-color: var(--terra); }
+
+  .receipt-duration {
+    margin-top: 8px;
+    font-style: italic;
+    color: var(--ink-3);
+    font-size: 14px;
+    text-align: center;
+  }
+  .receipt-duration b { color: var(--ink); font-weight: 500; }
+
+  .receipt-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 16px;
+    gap: 10px;
+  }
+  .receipt-foot .signoff {
+    font-style: italic; font-size: 12px; color: var(--ink-soft);
+  }
+
+  /* ============= UTILITY ============= */
+  .ornament-row {
+    display: flex; align-items: center; gap: 12px;
+    color: var(--rule); margin: 20px 0;
+  }
+  .ornament-row .rule { flex: 1; height: 1px; background: var(--rule); }
+  .ornament-row .glyph { font-family: 'Instrument Serif', serif; font-size: 16px; }
+
+  .spinme { animation: spin 1s linear; }
+  @keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+  /* tab switch animation */
+  .tabpanel { animation: panelIn .3s cubic-bezier(.2,.7,.2,1) both; }
+  @keyframes panelIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* selected text inside .ticket */
+  .ticket ::selection { background: var(--terra); color: var(--paper-bright); }
+
+  /* Custom scroll */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--rule); border: 2px solid var(--paper); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--ink-soft); }
+
+  /* link to v1 */
+  .v1-link {
+    position: fixed;
+    bottom: 14px; left: 50%;
+    transform: translateX(-50%);
+    background: var(--ink);
+    color: var(--paper);
+    font-variant: all-small-caps;
+    letter-spacing: .22em;
+    font-size: 10px;
+    padding: 5px 11px;
+    border: 1px solid var(--ink);
+    opacity: .35;
+    transition: opacity .2s ease;
+    z-index: 50;
+  }
+  .v1-link:hover { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- =================== MASTHEAD =================== -->
+<header class="masthead">
+  <div class="kicker-row">
+    <span>edizione speciale</span><span class="dot"></span>
+    <span>il quotidiano della cucina</span><span class="dot"></span>
+    <span>fondato nel duemilaventicinque</span><span class="dot"></span>
+    <span>mainnet · roma</span>
+  </div>
+  <div class="masthead-inner">
+    <div class="masthead-left">
+      <div>volume i · numero <span class="mono">XLVII</span></div>
+      <div id="today-date">venerdì, 23 maggio</div>
+      <div>cielo: limpido · 21°c</div>
+    </div>
+    <div class="wordmark">
+      <div class="name">Pizza<span class="amp">&amp;</span>Bot</div>
+      <div class="tag">
+        <span class="ornament">❦</span>
+        la cucina · cruscotto dell'operatore
+        <span class="ornament">❦</span>
+      </div>
+    </div>
+    <div class="masthead-right" style="display:flex; gap:18px; justify-content:flex-end; align-items:flex-end;">
+      <div>
+        <div>operatore</div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink); letter-spacing: 0;">0x84c2…f019</div>
+        <div id="ws-status">collegamento · stabile</div>
+      </div>
+      <div class="aperto-stamp" title="WebSocket: connected">
+        <span>al·</span>
+        <span class="big">APERTO</span>
+        <span>·forno</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs-bar">
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-tab="leaderboard">
+        <span class="it-title">Classifica</span>
+        <span class="ru">Лидерборд</span>
+      </button>
+      <button class="tab" data-tab="wallets">
+        <span class="it-title">I&nbsp;Miei&nbsp;Tavoli</span>
+        <span class="ru">Кошельки · <span id="wallet-count">0</span></span>
+      </button>
+      <button class="tab" data-tab="sessions">
+        <span class="it-title">In&nbsp;Cucina</span>
+        <span class="ru">Сессии · <span id="active-count">0</span></span>
+      </button>
+    </nav>
+    <div class="tabs-meta">
+      <div>ultima sincronia</div>
+      <div class="who" id="last-sync">—</div>
+    </div>
+  </div>
+</header>
+
+<main class="stage" id="stage"></main>
+
+<!-- =================== MODAL =================== -->
+<div class="modal-backdrop" id="modal">
+  <div class="receipt">
+    <button class="receipt-close" id="modal-close" aria-label="Закрыть">×</button>
+    <div class="receipt-head">
+      <div class="kicker">la ricevuta · per la cucina</div>
+      <h3>Запустить сессию</h3>
+      <div class="ord" id="modal-order-no">ord. №&nbsp;—</div>
+    </div>
+
+    <div class="receipt-section">
+      <div class="receipt-label">Кошелёк</div>
+      <div id="modal-wallets"></div>
+    </div>
+
+    <div class="receipt-section">
+      <div class="receipt-label">Целевой score</div>
+      <input id="modal-score" type="number" class="receipt-score-input tnum" />
+      <div class="receipt-duration" id="modal-duration">≈ <b>—</b></div>
+    </div>
+
+    <div class="receipt-foot">
+      <span class="signoff">— firma del cuoco</span>
+      <div style="display: flex; gap: 10px;">
+        <button class="btn btn-ghost" id="modal-cancel">Отмена</button>
+        <button class="btn btn-fill" id="modal-launch">
+          <span>Запустить</span>
+          <span style="font-style:italic; font-variant: normal; letter-spacing:0;">→</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<a href="Pizza Bot Dashboard v1 (dark).html" class="v1-link">v1 · dark theme</a>
+
+<script>
+/* ================= state & data ================= */
+const SPEED = 13.5;
+const ROMAN = (n) => {
+  const map = [[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];
+  let r = ''; for (const [v, s] of map) while (n >= v) { r += s; n -= v; }
+  return r;
+};
+const short = a => a.slice(0,6) + '…' + a.slice(-4);
+const RAND_ADDR = () => '0x' + Array.from({length:40}, () => '0123456789abcdef'[Math.floor(Math.random()*16)]).join('');
+const ITALIAN_FIRST_NAMES = ['Marco','Lucia','Enzo','Sofia','Pietro','Bianca','Carlo','Elena','Giovanni','Fiorella','Tommaso','Rosa','Dario','Anna','Salvatore','Chiara','Vito','Greta','Renzo','Iris','Alessandro','Mira','Luigi','Vera','Ezio','Stella','Bruno','Tessa','Romeo','Olivia','Cesare','Nina','Matteo','Aurora','Sandro','Camilla','Filippo','Beatrice','Rocco','Livia','Massimo','Serena','Gianni','Adriana','Paolo','Cosima'];
+const SURNAMES_RND = () => ITALIAN_FIRST_NAMES[Math.floor(Math.random()*ITALIAN_FIRST_NAMES.length)];
+
+const state = {
+  tab: 'leaderboard',
+  myWallets: [
+    { addr: '0x84c27a3e9b5d12f0a814bdc5e6f0a91b30f54f019', registered: true, alias: 'Marco' },
+    { addr: '0xa1f9b22c5d8e7f3041aa6c2bd9e7f013ab8c44a7', registered: true, alias: 'Lucia' },
+    { addr: '0x6d3e4f1a8b9c0e1f2a3b4c5d6e7f8a9b0c1d2e3f', registered: false, alias: 'Enzo' },
+  ],
+  leaderboard: [],
+  lastUpdate: new Date(),
+  sessions: [],
+  selectedWalletAddrs: [],
+  modalCtx: null,
+};
+
+function seedLeaderboard() {
+  const rows = [];
+  let s = 18420;
+  for (let i = 0; i < 50; i++) {
+    rows.push({ addr: RAND_ADDR(), score: s, alias: SURNAMES_RND() });
+    s -= 60 + Math.floor(Math.random()*240);
+  }
+  // place mine
+  rows[3]  = { addr: state.myWallets[0].addr, score: rows[3].score,  alias: state.myWallets[0].alias };
+  rows[11] = { addr: state.myWallets[1].addr, score: rows[11].score, alias: state.myWallets[1].alias };
+  state.leaderboard = rows;
+}
+seedLeaderboard();
+
+state.sessions = [
+  { id: 's1', addr: state.myWallets[0].addr, target: 14820, current: 9420, status: 'active',
+    startedAt: Date.now() - 11*60*1000,
+    log: [
+      { t: '14:02:11', lvl: 'info', msg: '→ collega ws://api.pizza.game' },
+      { t: '14:02:11', lvl: 'ok',   msg: '✓ sessione aperta · sala 8a3f' },
+      { t: '14:02:12', lvl: 'info', msg: '→ autorizza marco · 0x84c2…f019' },
+    ] },
+  { id: 's2', addr: state.myWallets[1].addr, target: 12100, current: 0, status: 'pending',
+    startedAt: Date.now() - 4*1000,
+    log: [{ t: '14:13:48', lvl: 'info', msg: 'in coda · attesa di un posto al forno' }] },
+  { id: 's3', addr: state.myWallets[0].addr, target: 9200, current: 9200, status: 'success',
+    startedAt: Date.now() - 62*60*1000, endedAt: Date.now() - 49*60*1000,
+    log: [{ t: '13:11:02', lvl: 'ok', msg: '✓ obiettivo raggiunto · 9 200 in 11m 22s' }] },
+  { id: 's4', addr: state.myWallets[2].addr, target: 5500, current: 1820, status: 'error',
+    startedAt: Date.now() - 130*60*1000, endedAt: Date.now() - 128*60*1000,
+    log: [{ t: '12:01:48', lvl: 'err', msg: '✗ interrotto · il tavolo non è registrato' }] },
+];
+
+/* ================= rendering ================= */
+const stage = document.getElementById('stage');
+
+function render() {
+  document.getElementById('wallet-count').textContent = state.myWallets.length;
+  const active = state.sessions.filter(s => s.status === 'active' || s.status === 'pending').length;
+  document.getElementById('active-count').textContent = active;
+  document.getElementById('last-sync').textContent = timeAgo(state.lastUpdate);
+
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === state.tab));
+
+  if (state.tab === 'leaderboard') stage.innerHTML = renderLeaderboard();
+  if (state.tab === 'wallets')     stage.innerHTML = renderWallets();
+  if (state.tab === 'sessions')    stage.innerHTML = renderSessions();
+  bindStage();
+}
+
+/* ------ LEADERBOARD ------ */
+function renderLeaderboard() {
+  const mine = new Set(state.myWallets.map(w => w.addr));
+  const minesInTop = state.leaderboard.filter(r => mine.has(r.addr)).length;
+  const updated = timeAgo(state.lastUpdate);
+  return `
+  <section class="tabpanel">
+    <div class="page-head">
+      <div>
+        <div class="kicker">classifica della casa</div>
+        <h1>la classifica<span class="roman">L</span></h1>
+        <div class="lede">I cinquanta migliori giocatori della serata. <span style="color: var(--terra-deep);">${minesInTop} dei miei tavoli</span> figurano sulla lista.</div>
+      </div>
+      <div class="page-head-aside">
+        <div class="label">aggiornata</div>
+        <div class="value" id="last-updated">${updated}</div>
+        <div style="margin-top: 14px; display: flex; gap: 8px; justify-content: flex-end;">
+          <button class="btn btn-ghost" id="refresh-btn">
+            <svg id="refresh-svg" width="13" height="13" viewBox="0 0 14 14" fill="none" style="display:inline-block;"><path d="M12 2v3.5H8.5M2 12V8.5h3.5M11.3 5.5A4.5 4.5 0 0 0 3 6.6M2.7 8.5A4.5 4.5 0 0 0 11 7.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Обновить
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <ol class="menu-list">
+      ${state.leaderboard.map((r, i) => {
+        const isMine = mine.has(r.addr);
+        const rankStr = i < 3 ? ROMAN(i+1) : String(i+1).padStart(2,'0');
+        const rankClass = i < 3 ? 'rank rank-top' : 'rank';
+        return `
+        <li class="menu-row ${isMine ? 'is-mine' : ''}" data-rank="${i}">
+          <div class="${rankClass}">${rankStr}</div>
+          <div class="mid">
+            <span class="who">${r.alias}</span>
+            <span class="addr">${short(r.addr)}</span>
+            ${isMine ? `<span class="mine-stamp">il mio</span>` : ''}
+            <span class="dots"></span>
+          </div>
+          <div class="right">
+            <span class="score tnum">${r.score.toLocaleString('ru-RU').replace(/,/g,'\u202f')}</span>
+            <button class="btn-text menu-action" data-action="place-higher" data-rank="${i}">↑ поставить выше</button>
+          </div>
+        </li>
+        `;
+      }).join('')}
+    </ol>
+  </section>
+  `;
+}
+
+/* ------ WALLETS ------ */
+function renderWallets() {
+  const rankByAddr = {};
+  state.leaderboard.forEach((r, i) => { rankByAddr[r.addr] = { rank: i+1, score: r.score }; });
+  const unregCount = state.myWallets.filter(w => !w.registered).length;
+
+  return `
+  <section class="tabpanel">
+    <div class="page-head">
+      <div>
+        <div class="kicker">i tavoli della casa</div>
+        <h1>i miei tavoli</h1>
+        <div class="lede">${state.myWallets.length} ${pluralRu(state.myWallets.length, ['кошелёк подключён','кошелька подключены','кошельков подключено'])}${unregCount ? `, <span style="color: var(--terra-deep);">${unregCount} ${pluralRu(unregCount,['не зарегистрирован','не зарегистрированы','не зарегистрированы'])}</span>` : ''}.</div>
+      </div>
+    </div>
+
+    ${state.myWallets.length === 0 ? `
+      <div class="empty">
+        <div class="glyph">∅</div>
+        <h3>il tavolo è vuoto</h3>
+        <p>Добавь первый кошелёк ниже — без них некого отправлять в форно.</p>
+      </div>
+    ` : `
+      <div class="wallet-grid">
+        ${state.myWallets.map((w, i) => {
+          const info = rankByAddr[w.addr];
+          return `
+            <article class="wallet-card">
+              ${!w.registered ? `
+                <div class="warn">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1.5L11 10.5H1L6 1.5Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M6 4.5v2.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="6" cy="8.5" r=".6" fill="currentColor"/></svg>
+                  <span class="tip-body">Кошелёк не зарегистрирован on-chain — сессии могут падать.</span>
+                </div>
+              ` : ''}
+              <div class="wallet-card-head">
+                <div>
+                  <div class="num">tavolo no. ${ROMAN(i+1)}</div>
+                  <div class="who-line">${w.alias}</div>
+                </div>
+              </div>
+              <div class="addr-full">${w.addr}</div>
+              <div class="stats">
+                <div class="stat">
+                  <div class="l">место</div>
+                  <div class="v">${info ? '#' + info.rank : '<small>вне топа</small>'}</div>
+                </div>
+                <div class="stat">
+                  <div class="l">score</div>
+                  <div class="v tnum">${info ? info.score.toLocaleString('ru-RU').replace(/,/g,'\u202f') : '<small>—</small>'}</div>
+                </div>
+              </div>
+              <div class="actions">
+                <button class="btn-text" data-action="wallet-delete" data-addr="${w.addr}" style="color: var(--wine);">× удалить</button>
+                <button class="btn btn-fill" data-action="wallet-launch" data-addr="${w.addr}">
+                  <span>Запустить</span>
+                  <span style="font-style:italic; font-variant: normal; letter-spacing:0;">→</span>
+                </button>
+              </div>
+            </article>
+          `;
+        }).join('')}
+      </div>
+    `}
+
+    <div class="add-wallet">
+      <div class="label">
+        un nuovo tavolo
+        <small>добавить кошелёк</small>
+      </div>
+      <form id="add-wallet-form">
+        <input id="add-wallet-input" class="input" placeholder="0x… (40 hex characters)" autocomplete="off" />
+        <button class="btn btn-fill" type="submit">
+          <span>Добавить</span>
+          <span style="font-style:italic; font-variant: normal; letter-spacing:0;">+</span>
+        </button>
+      </form>
+    </div>
+    <div id="add-wallet-error" class="add-wallet-err" style="margin-top: 10px; color: var(--terra-deep); font-style: italic; font-size: 13px; display: none;"></div>
+  </section>
+  `;
+}
+
+/* ------ SESSIONS ------ */
+function renderSessions() {
+  const active = state.sessions.filter(s => s.status === 'active' || s.status === 'pending');
+  const finished = state.sessions.filter(s => s.status === 'success' || s.status === 'error').slice(-20).reverse();
+
+  return `
+  <section class="tabpanel">
+    <div class="page-head">
+      <div>
+        <div class="kicker">in cucina · alla brace</div>
+        <h1>in cucina</h1>
+        <div class="lede">${active.length || 'Nessun'} ${active.length === 1 ? 'ordine al forno' : 'ordini al forno'} · <span class="it">${finished.length} serviti oggi</span>.</div>
+      </div>
+      <div class="page-head-aside">
+        <div class="label">ws · realtime</div>
+        <div class="value" style="color: var(--basil);">● collegamento stabile</div>
+      </div>
+    </div>
+
+    ${active.length === 0 ? `
+      <div class="empty">
+        <div class="glyph">~</div>
+        <h3>la cucina riposa</h3>
+        <p>Нет активных сессий. Запусти первую из «Лидерборда» или со своего «Тавола».</p>
+      </div>
+    ` : `
+      <div class="ticket-rail">
+        <div class="ticket-grid">
+          ${active.map(s => ticketCard(s)).join('')}
+        </div>
+      </div>
+    `}
+
+    ${finished.length > 0 ? `
+      <div class="history-section">
+        <div class="history-head">
+          <h2>già serviti</h2>
+          <div class="rule"></div>
+          <div class="count">архив · ${finished.length}/20</div>
+        </div>
+        <div>
+          ${finished.map(s => historyRow(s)).join('')}
+        </div>
+      </div>
+    ` : ''}
+  </section>
+  `;
+}
+
+function ticketCard(s) {
+  const pct = Math.min(100, Math.round((s.current / s.target) * 100));
+  const elapsed = Math.floor((Date.now() - s.startedAt) / 1000);
+  const remaining = s.status === 'active' ? Math.max(0, Math.round((s.target - s.current) / SPEED)) : Math.max(0, Math.round(s.target / SPEED));
+
+  const stamp = {
+    pending: '<span class="stamp stamp-pending">in coda · ожидание</span>',
+    active:  '<span class="stamp stamp-active">in forno · активна</span>',
+  }[s.status];
+
+  const lastLog = s.log.slice(-3);
+  const orderNo = s.id.toUpperCase().padStart(4, '0').slice(-4);
+
+  return `
+    <article class="ticket" data-sess="${s.id}">
+      <div class="ticket-head">
+        <div>
+          <div class="ticket-no">ordinazione no. ${orderNo}</div>
+          <div class="ticket-who">${short(s.addr)}</div>
+          <div class="ticket-time">старт · ${formatStartedAt(s.startedAt)}</div>
+        </div>
+        ${stamp}
+      </div>
+
+      <div class="ticket-stat-row">
+        <div class="ticket-stat">
+          <div class="l">цель</div>
+          <div class="v tnum">${s.target.toLocaleString('ru-RU').replace(/,/g,'\u202f')}</div>
+        </div>
+        <div class="ticket-stat">
+          <div class="l">сейчас</div>
+          <div class="v tnum ${s.status === 'active' ? 'accent' : ''}">${s.current.toLocaleString('ru-RU').replace(/,/g,'\u202f')}</div>
+        </div>
+        <div class="ticket-stat">
+          <div class="l">прошло</div>
+          <div class="v tnum">${fmtDuration(elapsed)}</div>
+        </div>
+      </div>
+
+      <div class="progress">
+        <div class="progress-meta">
+          <span>осталось ~${fmtDuration(remaining)}</span>
+          <span class="pct">${pct}%</span>
+        </div>
+        <div class="progress-bar"><i style="width:${pct}%"></i></div>
+      </div>
+
+      <div class="receipt-label" style="margin-bottom: 6px;">log della cucina · последние ${lastLog.length}</div>
+      <div class="logbox">
+        ${lastLog.map(l => `<span class="ln"><span class="ts">${l.t}</span><span class="lvl-${l.lvl}">${escapeHtml(l.msg)}</span></span>`).join('')}
+      </div>
+
+      ${s.status === 'active' ? `
+        <div class="ticket-actions">
+          <button class="btn-text" data-action="session-stop" data-id="${s.id}" style="color: var(--wine);">× остановить</button>
+        </div>
+      ` : ''}
+    </article>
+  `;
+}
+
+function historyRow(s) {
+  const pct = Math.min(100, Math.round((s.current / s.target) * 100));
+  const dur = Math.round(((s.endedAt || Date.now()) - s.startedAt) / 1000);
+  const stamp = s.status === 'success' ? '<span class="stamp stamp-success">servito</span>' : '<span class="stamp stamp-error">bruciato</span>';
+  return `
+    <div class="history-row">
+      <div>${stamp}</div>
+      <div class="who-mono">${short(s.addr)}</div>
+      <div class="score-line tnum">${s.current.toLocaleString('ru-RU').replace(/,/g,'\u202f')}<small> / ${s.target.toLocaleString('ru-RU').replace(/,/g,'\u202f')}</small></div>
+      <div class="score-line tnum" style="font-size:18px; color: var(--terra);">${pct}%</div>
+      <div class="right-meta">${fmtDuration(dur)} · ${timeAgo(new Date(s.endedAt || s.startedAt))}</div>
+    </div>
+  `;
+}
+
+/* ================= events ================= */
+function bindStage() {
+  stage.querySelectorAll('[data-action="place-higher"]').forEach(b => {
+    b.addEventListener('click', e => { e.stopPropagation(); openModalForLeaderboard(+b.dataset.rank); });
+  });
+  stage.querySelectorAll('.menu-row').forEach(r => {
+    r.addEventListener('click', () => openModalForLeaderboard(+r.dataset.rank));
+  });
+  stage.querySelectorAll('[data-action="wallet-launch"]').forEach(b => {
+    b.addEventListener('click', () => openModalForWallet(b.dataset.addr));
+  });
+  stage.querySelectorAll('[data-action="wallet-delete"]').forEach(b => {
+    b.addEventListener('click', () => {
+      if (confirm('Удалить кошелёк?')) {
+        state.myWallets = state.myWallets.filter(w => w.addr !== b.dataset.addr);
+        render();
+      }
+    });
+  });
+  stage.querySelectorAll('[data-action="session-stop"]').forEach(b => {
+    b.addEventListener('click', () => {
+      const s = state.sessions.find(x => x.id === b.dataset.id);
+      if (!s) return;
+      s.status = 'error'; s.endedAt = Date.now();
+      s.log.push({ t: nowHMS(), lvl: 'err', msg: '✗ fermato manualmente' });
+      render();
+    });
+  });
+  const refresh = document.getElementById('refresh-btn');
+  if (refresh) refresh.addEventListener('click', () => {
+    const svg = document.getElementById('refresh-svg');
+    svg.classList.add('spinme');
+    setTimeout(() => {
+      svg.classList.remove('spinme');
+      state.leaderboard.forEach(r => { r.score += (Math.random()*40 | 0) - 10; });
+      state.leaderboard.sort((a, b) => b.score - a.score);
+      state.lastUpdate = new Date();
+      render();
+    }, 600);
+  });
+  const f = document.getElementById('add-wallet-form');
+  if (f) f.addEventListener('submit', e => {
+    e.preventDefault();
+    const input = document.getElementById('add-wallet-input');
+    const err = document.getElementById('add-wallet-error');
+    const v = input.value.trim();
+    err.style.display = 'none';
+    if (!/^0x[a-fA-F0-9]{40}$/.test(v)) { err.textContent = 'Невалидный адрес — нужен 0x + 40 hex символов.'; err.style.display = 'block'; return; }
+    if (state.myWallets.some(w => w.addr.toLowerCase() === v.toLowerCase())) { err.textContent = 'Этот кошелёк уже в книге.'; err.style.display = 'block'; return; }
+    state.myWallets.push({ addr: v.toLowerCase(), registered: Math.random() > 0.3, alias: SURNAMES_RND() });
+    input.value = '';
+    render();
+  });
+}
+
+/* ================= tabs ================= */
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  state.tab = t.dataset.tab; render();
+}));
+
+/* ================= modal ================= */
+const modal = document.getElementById('modal');
+const modalScore = document.getElementById('modal-score');
+const modalDur = document.getElementById('modal-duration');
+const modalWalletsEl = document.getElementById('modal-wallets');
+const modalOrderNo = document.getElementById('modal-order-no');
+
+function openModalForLeaderboard(rankIndex) {
+  const row = state.leaderboard[rankIndex];
+  state.modalCtx = { mode: 'lb', addrs: [state.myWallets[0]?.addr].filter(Boolean), target: row.score + 300 };
+  modalScore.value = state.modalCtx.target;
+  modalOrderNo.textContent = `ord. №\u00a0${(Math.random()*9000+1000|0)}`;
+  state.selectedWalletAddrs = state.modalCtx.addrs.slice();
+  renderModalWallets();
+  updateModalDuration();
+  showModal();
+}
+function openModalForWallet(addr) {
+  state.modalCtx = { mode: 'w', addrs: [addr], target: 5000 };
+  modalScore.value = 5000;
+  modalOrderNo.textContent = `ord. №\u00a0${(Math.random()*9000+1000|0)}`;
+  state.selectedWalletAddrs = [addr];
+  renderModalWallets();
+  updateModalDuration();
+  showModal();
+}
+function renderModalWallets() {
+  const sel = new Set(state.selectedWalletAddrs);
+  if (state.myWallets.length === 0) {
+    modalWalletsEl.innerHTML = `<div style="font-style: italic; color: var(--ink-3); padding: 12px; border: 1px dashed var(--rule);">Нет добавленных кошельков</div>`;
+    return;
+  }
+  if (state.myWallets.length === 1) {
+    const w = state.myWallets[0];
+    modalWalletsEl.innerHTML = `
+      <div class="receipt-walletopt checked">
+        <div class="chkbox"></div>
+        <span class="name">${short(w.addr)} · ${w.alias}</span>
+        ${!w.registered ? '<span class="tag">не зарег.</span>' : ''}
+      </div>`;
+    state.selectedWalletAddrs = [w.addr];
+    return;
+  }
+  modalWalletsEl.innerHTML = state.myWallets.map(w => `
+    <label class="receipt-walletopt ${sel.has(w.addr) ? 'checked' : ''}" data-addr="${w.addr}">
+      <input type="checkbox" ${sel.has(w.addr) ? 'checked' : ''}/>
+      <span class="chkbox"></span>
+      <span class="name">${short(w.addr)} · ${w.alias}</span>
+      ${!w.registered ? '<span class="tag">не зарег.</span>' : ''}
+    </label>
+  `).join('');
+  modalWalletsEl.querySelectorAll('.receipt-walletopt').forEach(el => {
+    el.addEventListener('click', () => {
+      const a = el.dataset.addr;
+      const set = new Set(state.selectedWalletAddrs);
+      if (set.has(a)) set.delete(a); else set.add(a);
+      state.selectedWalletAddrs = [...set];
+      renderModalWallets();
+    });
+  });
+}
+function updateModalDuration() {
+  const sc = parseInt(modalScore.value, 10) || 0;
+  const sec = Math.round(sc / SPEED);
+  const m = Math.floor(sec / 60), s = sec % 60;
+  modalDur.innerHTML = `≈ <b>${m} мин ${String(s).padStart(2,'0')} сек</b> в форно`;
+}
+modalScore.addEventListener('input', updateModalDuration);
+function showModal() { modal.classList.add('open'); setTimeout(()=>modalScore.focus(), 100); }
+function hideModal() { modal.classList.remove('open'); }
+document.getElementById('modal-close').addEventListener('click', hideModal);
+document.getElementById('modal-cancel').addEventListener('click', hideModal);
+modal.addEventListener('click', e => { if (e.target === modal) hideModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') hideModal(); });
+
+document.getElementById('modal-launch').addEventListener('click', () => {
+  const target = parseInt(modalScore.value, 10) || 0;
+  if (target <= 0 || state.selectedWalletAddrs.length === 0) return;
+  state.selectedWalletAddrs.forEach(addr => {
+    const id = 's' + (Math.random()*1e6|0).toString(36);
+    state.sessions.push({
+      id, addr, target, current: 0, status: 'pending', startedAt: Date.now(),
+      log: [{ t: nowHMS(), lvl: 'info', msg: `in coda · target ${target.toLocaleString('en-US')}` }],
+    });
+  });
+  hideModal();
+  state.tab = 'sessions';
+  render();
+});
+
+/* ================= mock realtime ================= */
+const LOG_T = [
+  { lvl: 'info', msg: '→ giocata · puntata 1.0' },
+  { lvl: 'info', msg: '↻ round · +%P pts' },
+  { lvl: 'info', msg: '→ refill chips · 50' },
+  { lvl: 'ok',   msg: '✓ streak x3 · bonus +90' },
+  { lvl: 'info', msg: '↻ sync · totale %S' },
+  { lvl: 'warn', msg: '~ rpc lento · retry 1/3' },
+];
+setInterval(() => {
+  let dirty = false;
+  state.sessions.forEach(s => {
+    if (s.status === 'pending' && Date.now() - s.startedAt > 3000) {
+      s.status = 'active';
+      s.log.push({ t: nowHMS(), lvl: 'ok', msg: '✓ sessione aperta · sala ' + (Math.random()*65535 | 0).toString(16) });
+      dirty = true;
+    }
+    if (s.status === 'active') {
+      const gain = (Math.random() * 40 + 10) | 0;
+      s.current = Math.min(s.target, s.current + gain);
+      if (Math.random() > 0.35) {
+        const t = LOG_T[Math.random() * LOG_T.length | 0];
+        s.log.push({ t: nowHMS(), lvl: t.lvl, msg: t.msg.replace('%P', '+' + gain).replace('%S', s.current.toLocaleString('en-US')) });
+      }
+      if (s.current >= s.target) {
+        s.status = 'success';
+        s.endedAt = Date.now();
+        s.log.push({ t: nowHMS(), lvl: 'ok', msg: `✓ obiettivo raggiunto · ${s.current.toLocaleString('en-US')}` });
+      }
+      dirty = true;
+    }
+  });
+  const finished = state.sessions.filter(s => s.status === 'success' || s.status === 'error');
+  if (finished.length > 20) {
+    finished.sort((a, b) => (a.endedAt || 0) - (b.endedAt || 0));
+    const drop = finished.slice(0, finished.length - 20).map(s => s.id);
+    state.sessions = state.sessions.filter(s => !drop.includes(s.id));
+  }
+  if (dirty && state.tab === 'sessions') render();
+}, 1500);
+
+/* ================= helpers ================= */
+function fmtDuration(sec) {
+  if (!isFinite(sec) || sec < 0) sec = 0;
+  const m = Math.floor(sec / 60), s = sec % 60;
+  if (m === 0) return s + ' сек';
+  return m + ' мин ' + String(s).padStart(2, '0') + ' сек';
+}
+function timeAgo(d) {
+  const s = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (s < 5) return 'только что';
+  if (s < 60) return s + ' сек назад';
+  const m = Math.floor(s / 60);
+  if (m < 60) return m + ' мин назад';
+  const h = Math.floor(m / 60);
+  return h + ' ч назад';
+}
+function nowHMS() {
+  const d = new Date();
+  return [d.getHours(), d.getMinutes(), d.getSeconds()].map(n => String(n).padStart(2, '0')).join(':');
+}
+function formatStartedAt(ts) {
+  const d = new Date(ts);
+  return [d.getHours(), d.getMinutes()].map(n => String(n).padStart(2, '0')).join(':');
+}
+function escapeHtml(str) { return str.replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' })[c]); }
+function pluralRu(n, [one, few, many]) {
+  const m = n % 100;
+  if (m >= 11 && m <= 14) return many;
+  const k = n % 10;
+  if (k === 1) return one;
+  if (k >= 2 && k <= 4) return few;
+  return many;
+}
+
+// minute tick for relative timestamps in masthead
+setInterval(() => { document.getElementById('last-sync').textContent = timeAgo(state.lastUpdate); }, 30000);
+
+render();
+</script>
+</body>
+</html>

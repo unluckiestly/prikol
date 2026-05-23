@@ -1,0 +1,189 @@
+import asyncio
+import json
+import random
+from pathlib import Path
+
+from typing import List, Optional
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+import httpx
+
+from bot import (
+    get_token, encrypt_payload, get_leaderboard_top,
+    BASE_HEADERS, API_KEY, PROXY, HARDCODED_KEY,
+)
+
+# ---------------------------------------------------------------------------
+WALLETS_FILE = Path("wallets.json")
+app = FastAPI()
+
+# WebSocket broadcast
+clients: list[WebSocket] = []
+
+async def broadcast(msg: dict):
+    dead = []
+    for ws in clients:
+        try:
+            await ws.send_json(msg)
+        except Exception:
+            dead.append(ws)
+    for ws in dead:
+        clients.remove(ws)
+
+@app.websocket("/ws")
+async def ws_handler(ws: WebSocket):
+    await ws.accept()
+    clients.append(ws)
+    try:
+        while True:
+            await ws.receive_text()   # держим соединение живым
+    except WebSocketDisconnect:
+        if ws in clients:
+            clients.remove(ws)
+
+# ---------------------------------------------------------------------------
+# Wallets CRUD
+
+def load_wallets() -> list[dict]:
+    if not WALLETS_FILE.exists():
+        return []
+    return json.loads(WALLETS_FILE.read_text(encoding="utf-8"))
+
+def save_wallets(wallets: list[dict]):
+    WALLETS_FILE.write_text(
+        json.dumps(wallets, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+@app.get("/api/wallets")
+async def api_get_wallets():
+    return load_wallets()
+
+class WalletBody(BaseModel):
+    wallet: str
+
+class ImportBody(BaseModel):
+    wallets: List[str]
+
+@app.post("/api/wallets", status_code=201)
+async def api_add_wallet(body: WalletBody):
+    addr = body.wallet.strip()
+    if not (addr.startswith("0x") and len(addr) == 42):
+        raise HTTPException(400, "Невалидный адрес — нужен 0x + 40 hex символов")
+    existing = load_wallets()
+    if any(w["wallet"].lower() == addr.lower() for w in existing):
+        raise HTTPException(409, "Кошелёк уже добавлен")
+    existing.append({"wallet": addr})
+    save_wallets(existing)
+    return {"added": 1, "skipped": 0, "invalid": 0}
+
+@app.post("/api/import")
+async def api_import_wallets(body: ImportBody):
+    existing = load_wallets()
+    existing_set = {w["wallet"].lower() for w in existing}
+    added, skipped, invalid = 0, 0, 0
+
+    for raw in body.wallets:
+        addr = raw.strip()
+        if not (addr.startswith("0x") and len(addr) == 42):
+            invalid += 1
+            continue
+        if addr.lower() in existing_set:
+            skipped += 1
+            continue
+        existing.append({"wallet": addr})
+        existing_set.add(addr.lower())
+        added += 1
+
+    save_wallets(existing)
+    return {"added": added, "skipped": skipped, "invalid": invalid}
+
+@app.delete("/api/wallets/{address}")
+async def api_delete_wallet(address: str):
+    wallets = [w for w in load_wallets() if w["wallet"].lower() != address.lower()]
+    save_wallets(wallets)
+    return {"ok": True}
+
+# ---------------------------------------------------------------------------
+# Leaderboard
+
+@app.get("/api/leaderboard")
+async def api_leaderboard(limit: int = 50):
+    wallets = load_wallets()
+    if not wallets:
+        raise HTTPException(400, "Сначала добавь хотя бы один кошелёк")
+    async with httpx.AsyncClient(proxy=PROXY, timeout=15) as client:
+        token = await get_token(client, wallets[0]["wallet"])
+    results = await get_leaderboard_top(token, n=limit)
+    return {"results": results}
+
+# ---------------------------------------------------------------------------
+# Run sessions
+
+class RunBody(BaseModel):
+    wallets: List[str]
+    score: int
+
+@app.post("/api/run")
+async def api_run(body: RunBody):
+    if not body.wallets:
+        raise HTTPException(400, "Нет кошельков")
+    if body.score <= 0:
+        raise HTTPException(400, "Score должен быть > 0")
+
+    async def do_run(wallet: str, target: int):
+        score = target + random.randint(-100, 100)
+        score = round(score / 10) * 10
+        duration = int(score / 13.5) + random.randint(-30, 30)
+
+        await broadcast({"type": "run_started", "wallet": wallet, "score": score})
+
+        try:
+            async with httpx.AsyncClient(proxy=PROXY, timeout=30) as client:
+                token = await get_token(client, wallet)
+                auth_headers = {**BASE_HEADERS, "Authorization": f"Bearer {token}"}
+
+                start_res = await client.post(
+                    "https://api-pizza-game.dlicom.io/v1/game-session/start",
+                    headers=auth_headers,
+                )
+                if not start_res.is_success:
+                    raise Exception(f"start: HTTP {start_res.status_code}")
+
+                session_id = start_res.json()["session"]["id"]
+                await asyncio.sleep(10)
+
+                encrypted = encrypt_payload(
+                    {"id": session_id, "score": score, "duration": duration},
+                    wallet, session_id,
+                )
+                end_res = await client.post(
+                    "https://api-pizza-game.dlicom.io/v1/game-session/end",
+                    headers=auth_headers,
+                    content=json.dumps({"data": encrypted}),
+                )
+                result = end_res.json()
+
+            await broadcast({
+                "type": "run_done",
+                "wallet": wallet,
+                "score": score,
+                "result": result,
+            })
+
+        except Exception as e:
+            await broadcast({
+                "type": "run_error",
+                "wallet": wallet,
+                "error": str(e),
+            })
+
+    for wallet in body.wallets:
+        asyncio.create_task(do_run(wallet, body.score))
+
+    return {"ok": True, "queued": len(body.wallets)}
+
+# ---------------------------------------------------------------------------
+# Serve frontend (должен быть последним)
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
