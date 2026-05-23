@@ -16,6 +16,7 @@ from bot import (
 
 # ---------------------------------------------------------------------------
 WALLETS_FILE = Path("wallets.json")
+LEADERBOARD_WALLET = "0x2fe20eef11ed9b1b48aed2bc9ad7b3ad203436c9"  # только для фетча лидерборда
 app = FastAPI()
 
 # кеш токенов: { wallet_addr: (token, expires_at) }
@@ -124,21 +125,12 @@ async def api_delete_wallet(address: str):
 
 @app.get("/api/leaderboard")
 async def api_leaderboard(limit: int = 200):
-    wallets = load_wallets()
-    if not wallets:
-        raise HTTPException(400, "Сначала добавь хотя бы один кошелёк")
-    last_err = None
-    for w in wallets:
-        try:
-            token = await get_cached_token(w["wallet"])
-            results = await get_leaderboard_top(token, n=limit)
-            return {"results": results}
-        except Exception as e:
-            last_err = e
-            # сбрасываем кеш для этого кошелька чтобы не переиспользовать дохлый токен
-            _token_cache.pop(w["wallet"].lower(), None)
-            continue
-    raise HTTPException(500, str(last_err))
+    try:
+        token = await get_cached_token(LEADERBOARD_WALLET)
+        results = await get_leaderboard_top(token, n=limit)
+        return {"results": results}
+    except Exception as e:
+        raise HTTPException(500, str(e))
 
 # ---------------------------------------------------------------------------
 # Core run logic (shared between /api/run and /api/run-top)
@@ -227,20 +219,13 @@ async def api_run_top(body: RunTopBody):
     if not target_wallets:
         raise HTTPException(400, "Нет кошельков")
 
-    # Свежий лидерборд — перебираем кошельки пока один не сработает
-    top = None
-    all_wallets = load_wallets()
-    for w in all_wallets:
-        try:
-            token = await get_cached_token(w["wallet"])
-            needed = body.start_rank + len(target_wallets) + 5
-            top = await get_leaderboard_top(token, n=max(needed, 20))
-            break
-        except Exception:
-            _token_cache.pop(w["wallet"].lower(), None)
-            continue
-    if top is None:
-        raise HTTPException(500, "Не удалось получить лидерборд ни одним кошельком")
+    # Свежий лидерборд через выделенный кошелёк
+    try:
+        token = await get_cached_token(LEADERBOARD_WALLET)
+        needed = body.start_rank + len(target_wallets) + 5
+        top = await get_leaderboard_top(token, n=max(needed, 20))
+    except Exception as e:
+        raise HTTPException(500, f"Не удалось получить лидерборд: {e}")
 
     plan = []
     for i, wallet in enumerate(target_wallets):
