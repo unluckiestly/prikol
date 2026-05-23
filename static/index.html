@@ -251,6 +251,8 @@ async function fetchWallets() {
 }
 
 async function fetchLeaderboard() {
+  if (state._lbFetching) return;
+  state._lbFetching = true;
   try {
     const data = await apiFetch('/api/leaderboard?limit=50');
     state.leaderboard = data.results || [];
@@ -258,6 +260,8 @@ async function fetchLeaderboard() {
     render();
   } catch (e) {
     showToast('error', '❌ Лидерборд: ' + e.message);
+  } finally {
+    state._lbFetching = false;
   }
 }
 
@@ -305,7 +309,11 @@ function render() {
   positionTabPill();
   document.getElementById('wallet-count-pill').textContent = state.wallets.length;
   if (state.tab === 'leaderboard') mainEl.innerHTML = renderLeaderboard();
-  if (state.tab === 'wallets')     mainEl.innerHTML = renderWallets();
+  if (state.tab === 'wallets') {
+    mainEl.innerHTML = renderWallets();
+    // всегда тянем свежий лидерборд когда открыт таб кошельков
+    if (!state._lbFetching) fetchLeaderboard();
+  }
   if (state.tab === 'manual')      mainEl.innerHTML = renderManual();
   bindMainEvents();
 }
@@ -316,8 +324,6 @@ const tabPill  = document.getElementById('tab-pill');
 tabBtns.forEach(b => b.addEventListener('click', () => {
   state.tab = b.dataset.tab;
   render();
-  // при переключении на кошельки — тянем свежий лидерборд для актуальных мест/скоров
-  if (b.dataset.tab === 'wallets') fetchLeaderboard();
 }));
 
 function positionTabPill() {
@@ -469,6 +475,16 @@ function renderWallets() {
     if (r.address) rankByAddr[r.address.toLowerCase()] = { rank: i+1, score: r.best_score ?? 0 };
   });
 
+  // сортируем: сначала по месту (asc), потом по score (desc), неранкнутые в конец
+  const sorted = [...state.wallets].sort((a, b) => {
+    const ia = rankByAddr[a.wallet.toLowerCase()];
+    const ib = rankByAddr[b.wallet.toLowerCase()];
+    if (ia && ib) return ia.rank - ib.rank;
+    if (ia) return -1;
+    if (ib) return 1;
+    return 0;
+  });
+
   return `
   <section class="tabpanel">
     <div class="flex items-end justify-between mb-6">
@@ -494,7 +510,7 @@ function renderWallets() {
         <div class="grid grid-cols-[1fr_140px_160px_220px] px-6 py-3 text-[11px] uppercase tracking-wider text-ink-500 font-semibold border-b border-ink-800 bg-ink-900/40">
           <div>Адрес</div><div class="text-right">Место</div><div class="text-right">Score</div><div></div>
         </div>
-        ${state.wallets.map(w => {
+        ${sorted.map(w => {
           const info = rankByAddr[w.wallet.toLowerCase()];
           return `
           <div class="row grid grid-cols-[1fr_140px_160px_220px] items-center px-6 py-4 border-b border-ink-800/60 last:border-0">
