@@ -12,10 +12,16 @@ import httpx
 HARDCODED_KEY = "431d2071225ef024356161fe295a1b1c55aa449c599c844607ebc291259e099aca5be1cb39683ac0f4ab5a2bf3cd8b61"
 API_KEY = "$2a$12$PxzudDtnM61RKttX18F.8.XuNPSNa8EkrPvz7iyH1QBef9otHAjUm"
 
-PROXY = None
+PROXIES = [
+    "http://XHfBgD:CcSK84@196.16.244.211:8000",
+    "http://XHfBgD:CcSK84@196.17.223.216:8000",
+    "http://XHfBgD:CcSK84@196.18.227.154:8000",
+]
 
-def get_proxy():
-    return None
+def get_proxy() -> str:
+    return random.choice(PROXIES)
+
+PROXY = None
 
 # бонусы к score относительно текущего топа
 # индекс = место в топе (0 = #1), значение = сколько прибавить
