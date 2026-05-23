@@ -16,7 +16,7 @@ from bot import (
 
 # ---------------------------------------------------------------------------
 WALLETS_FILE = Path("wallets.json")
-LEADERBOARD_WALLET = "0x2fe20eef11ed9b1b48aed2bc9ad7b3ad203436c9"  # только для фетча лидерборда
+LEADERBOARD_WALLET = "0xaef27d1426da205a5c942f55defdd4c701eee135"  # только для фетча лидерборда
 app = FastAPI()
 
 # кеш токенов: { wallet_addr: (token, expires_at) }
