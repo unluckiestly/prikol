@@ -584,40 +584,59 @@ function closeModal() {
 }
 
 function renderModalWallets(selected, highlightAddr = null) {
-  const sel = new Set(selected.map(a => a.toLowerCase()));
-  const hl  = highlightAddr ? highlightAddr.toLowerCase() : null;
+  const hl = highlightAddr ? highlightAddr.toLowerCase() : null;
+  // для радио — первый из selected или highlighted
+  const defaultAddr = (hl && state.wallets.some(w => w.wallet.toLowerCase() === hl))
+    ? highlightAddr
+    : (selected[0] || state.wallets[0]?.wallet || '');
+
+  state.selectedAddrs = defaultAddr ? [defaultAddr] : [];
+
+  const rankByAddr = {};
+  state.leaderboard.forEach((r, i) => {
+    if (r.address) rankByAddr[r.address.toLowerCase()] = { rank: i + 1, score: r.best_score ?? 0 };
+  });
 
   if (!state.wallets.length) {
     walletsEl.innerHTML = `<div class="text-sm text-ink-400 font-mono p-3 border border-dashed border-ink-700 rounded-lg">Нет добавленных кошельков</div>`;
     return;
   }
-  if (state.wallets.length === 1) {
-    const w = state.wallets[0];
-    state.selectedAddrs = [w.wallet];
-    const isHl = hl && w.wallet.toLowerCase() === hl;
-    walletsEl.innerHTML = `
-      <div class="flex items-center gap-3 p-3 rounded-lg border ${isHl ? 'bg-pizza-ember/10 border-pizza-ember/40' : 'bg-ink-850 border-ink-700'}">
-        <div class="w-7 h-7 rounded-md bg-pizza-ember/15 border border-pizza-ember/30 grid place-items-center text-[10px] font-bold text-pizza-crust">${w.wallet.slice(2,4).toUpperCase()}</div>
-        <span class="font-mono text-sm flex-1">${short(w.wallet)}</span>
-        ${isHl ? `<span class="text-[10px] font-semibold uppercase tracking-wider text-pizza-crust">этот кошелёк</span>` : ''}
-      </div>`;
-    return;
-  }
+
   walletsEl.innerHTML = state.wallets.map(w => {
-    const isHl = hl && w.wallet.toLowerCase() === hl;
-    const checked = sel.has(w.wallet.toLowerCase());
+    const isHl      = hl && w.wallet.toLowerCase() === hl;
+    const isChecked = w.wallet.toLowerCase() === defaultAddr.toLowerCase();
+    const info      = rankByAddr[w.wallet.toLowerCase()];
     return `
-    <label class="flex items-center gap-3 p-2.5 rounded-lg cursor-pointer border transition-colors
+    <label class="flex items-center gap-3 p-3 rounded-lg cursor-pointer border transition-colors
       ${isHl ? 'bg-pizza-ember/10 border-pizza-ember/40' : 'border-transparent hover:bg-ink-850 has-[:checked]:bg-ink-850 has-[:checked]:border-pizza-ember/30'}">
-      <input type="checkbox" class="chk modal-chk" data-addr="${w.wallet}" ${checked ? 'checked' : ''} />
-      <div class="w-7 h-7 rounded-md bg-pizza-ember/15 border border-pizza-ember/30 grid place-items-center text-[10px] font-bold text-pizza-crust">${w.wallet.slice(2,4).toUpperCase()}</div>
-      <span class="font-mono text-sm flex-1">${short(w.wallet)}</span>
-      ${isHl ? `<span class="text-[10px] font-semibold uppercase tracking-wider text-pizza-crust">в лидерборде</span>` : ''}
+      <input type="radio" name="modal-wallet" class="modal-radio" data-addr="${w.wallet}" ${isChecked ? 'checked' : ''}
+        style="appearance:none;width:16px;height:16px;border-radius:50%;border:1.5px solid #3d3730;background:#13110e;cursor:pointer;position:relative;flex-shrink:0;transition:all .15s"
+        onchange="state.selectedAddrs=[this.dataset.addr]; document.querySelectorAll('label:has(.modal-radio)').forEach(l=>l.classList.remove('bg-ink-850','border-pizza-ember/30')); this.closest('label').classList.add('bg-ink-850','border-pizza-ember/30')" />
+      <div class="w-7 h-7 rounded-md bg-pizza-ember/15 border border-pizza-ember/30 grid place-items-center text-[10px] font-bold text-pizza-crust flex-shrink-0">${w.wallet.slice(2,4).toUpperCase()}</div>
+      <div class="flex-1 min-w-0">
+        <div class="font-mono text-sm">${short(w.wallet)}</div>
+        <div class="flex items-center gap-2 mt-0.5">
+          ${info
+            ? `<span class="text-[11px] font-semibold text-pizza-crust font-mono">#${info.rank}</span>
+               <span class="text-[11px] text-ink-400 font-mono">${info.score.toLocaleString('ru-RU')} pts</span>`
+            : `<span class="text-[11px] text-ink-500 font-mono">вне топа</span>`}
+          ${isHl ? `<span class="text-[10px] font-semibold uppercase tracking-wider text-pizza-ember">● текущая позиция</span>` : ''}
+        </div>
+      </div>
     </label>`;
   }).join('');
-  walletsEl.querySelectorAll('.modal-chk').forEach(c => c.addEventListener('change', () => {
-    state.selectedAddrs = [...walletsEl.querySelectorAll('.modal-chk:checked')].map(x => x.dataset.addr);
-  }));
+
+  // стилизуем radio через JS после рендера
+  walletsEl.querySelectorAll('.modal-radio').forEach(r => {
+    const update = () => {
+      walletsEl.querySelectorAll('.modal-radio').forEach(x => {
+        x.style.background = x.checked ? '#ff7a18' : '#13110e';
+        x.style.borderColor = x.checked ? '#ff7a18' : '#3d3730';
+      });
+    };
+    r.addEventListener('change', () => { state.selectedAddrs = [r.dataset.addr]; update(); });
+    update();
+  });
 }
 
 function setLaunchIdle() {
