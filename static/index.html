@@ -624,9 +624,10 @@ function bindMainEvents() {
     document.getElementById('m-spinner').classList.remove('hidden');
     try {
       await apiFetch('/api/run', { method: 'POST', body: JSON.stringify({ wallets: [wallet], score, duration }) });
-      // результат придёт через WebSocket
+      showToast('info', `🍕 ${short(wallet)} — сессия поставлена в очередь`);
     } catch (e) {
       showToast('error', '❌ ' + e.message);
+    } finally {
       mLaunchBtn.disabled = false;
       document.getElementById('m-launch-text').textContent = 'Запустить';
       document.getElementById('m-spinner').classList.add('hidden');
