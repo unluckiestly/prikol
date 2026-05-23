@@ -407,6 +407,10 @@ function renderWallets() {
         <h1 class="text-3xl font-bold mt-1 tracking-tight">Кошельки</h1>
         <p class="text-ink-400 text-sm mt-1">${state.wallets.length} подключено</p>
       </div>
+      <button id="refresh-wallets-btn" class="btn-ghost px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2">
+        <svg id="refresh-wallets-icon" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M12 2v3.5H8.5M2 12V8.5h3.5M11.3 5.5A4.5 4.5 0 0 0 3 6.6M2.7 8.5A4.5 4.5 0 0 0 11 7.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Обновить
+      </button>
     </div>
 
     ${state.wallets.length === 0 ? `
@@ -514,6 +518,19 @@ function bindMainEvents() {
       await fetchLeaderboard();
       icon.classList.remove('animate-spin');
       refreshBtn.disabled = false;
+    });
+  }
+
+  // refresh wallets
+  const refreshWalletsBtn = document.getElementById('refresh-wallets-btn');
+  if (refreshWalletsBtn) {
+    refreshWalletsBtn.addEventListener('click', async () => {
+      const icon = document.getElementById('refresh-wallets-icon');
+      refreshWalletsBtn.disabled = true;
+      icon.classList.add('animate-spin');
+      await Promise.all([fetchWallets(), fetchLeaderboard()]);
+      icon.classList.remove('animate-spin');
+      refreshWalletsBtn.disabled = false;
     });
   }
 
